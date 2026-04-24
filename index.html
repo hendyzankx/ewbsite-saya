@@ -3,53 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kasir Scan Pro - Fix Settings</title>
+    <title>Kasir Scan Pro - Camera Fix</title>
     
-    <!-- LIBRARY SCANNER (DI-EMBEDDED AGAR OFFLINE) -->
+    <!-- LIBRARY SCANNER (DI-EMBEDDED) -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" id="html5-qrcode-lib"></script>
     
     <script>
-        // FALLBACK SCANNER (Jika Offline saat load pertama)
-        window.Html5Qrcode = (function() {
-            function t() {
-                this._isScanning = !1, this._localMediaStream = null, this._element = null
-            }
-            return t.prototype.start = function(t, e, o, n) {
-                var i = this;
-                if (this._isScanning) return Promise.reject("Already scanning");
-                this._isScanning = !0;
-                var r = document.getElementById(this._elementId);
-                if (!r) return this._isScanning = !1, Promise.reject("Element not found");
-                return this._setupCamera(t, r, e).then(function(t) {
-                    i._localMediaStream = t, i._videoElement = t, r.appendChild(t), i._scanHandler = o, n && (i._errorHandler = n), i._startScanningLoop()
-                })
-            }, t.prototype.stop = function() {
-                this._isScanning = !1, this._localMediaStream && this._localMediaStream.getTracks().forEach(function(t) {
-                    t.stop()
-                })
-            }, t.prototype._setupCamera = function(t, e, o) {
-                return navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: t,
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    }
-                }).then(function(t) {
-                    var o = document.createElement("video");
-                    return o.srcObject = t, o.setAttribute("playsinline", !0), o.setAttribute("autoplay", !0), o
-                })
-            }, t.prototype._startScanningLoop = function() {
-                var t = this;
-                if (!this._isScanning) return;
-                if(!this._scanInterval) {
-                    this._scanInterval = setInterval(function(){
-                        // Mock check
-                    },1000);
+        // FALLBACK SCANNER (TANAMAN LANGSUNG DI KODE - SUPER STABIL)
+        // Kita gunakan logika sederhana untuk memastikan library ada
+        window.addEventListener('load', function() {
+            if (!window.Html5Qrcode && !window.html5Qrcode) {
+                console.log("Library Scanner online gagal load. Memuat mode cadangan...");
+                // Jika Anda benar-benar butuh scanner offline tanpa file eksternal, 
+                // sebaiknya gunakan aplikasi Native. 
+                // Namun, kita buat dummy object agar tidak error saat load.
+                window.Html5Qrcode = function() {
+                    this.start = function() { return Promise.reject("Library tidak tersedia. Harap izinkan internet sekali untuk load library, atau gunakan input manual."); };
+                    this.stop = function() {};
                 }
-            }, t.prototype.getCapturedElement = function() {
-                return this._videoElement
-            }, t
-        })();
+            }
+        });
     </script>
 
     <style>
@@ -95,58 +68,36 @@
 
         /* --- MODE SWITCH --- */
         .mode-switch-container { padding: 15px 15px 0; }
-        .mode-switch {
-            display: flex; background: #f0f0f0;
-            border-radius: 12px; padding: 5px;
-        }
+        .mode-switch { display: flex; background: #f0f0f0; border-radius: 12px; padding: 5px; }
         .mode-btn {
             flex: 1; padding: 10px; border: none; border-radius: 10px;
             font-size: 0.85rem; font-weight: 600; cursor: pointer;
             background: transparent; color: #888; transition: all 0.3s;
         }
-        .mode-btn.active {
-            background: white; color: #4e54c8;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
+        .mode-btn.active { background: white; color: #4e54c8; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .mode-btn.active.stok-active { color: #f5af19; background: #fff8e1; }
 
         /* --- SCANNER SECTION --- */
-        .scanner-wrapper {
-            padding: 15px; background: #f8f9fa; text-align: center;
-            border-bottom: 1px solid #eee;
-        }
+        .scanner-wrapper { padding: 15px; background: #f8f9fa; text-align: center; border-bottom: 1px solid #eee; }
         #reader-wrapper {
-            position: relative;
-            width: 260px; 
-            height: 260px; 
-            margin: 0 auto 15px;
-            border-radius: 20px;
-            overflow: hidden;
-            border: 4px solid #ddd; 
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
-            background: #000;
+            position: relative; width: 260px; height: 260px; margin: 0 auto 15px;
+            border-radius: 20px; overflow: hidden; border: 4px solid #ddd;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.1); background: #000;
             transition: border-color 0.3s;
         }
-        #reader {
-            width: 100% !important;
-            height: 100% !important;
-            border: none !important;
-            background: #000;
-        }
+        #reader { width: 100% !important; height: 100% !important; border: none !important; background: #000; }
         .scan-line {
             position: absolute; top: 0; left: 0; width: 100%; height: 2px;
             background: #e74c3c; box-shadow: 0 0 4px #e74c3c;
-            animation: scanMove 2s infinite linear;
-            pointer-events: none;
-            z-index: 10;
+            animation: scanMove 2s infinite linear; pointer-events: none; z-index: 10;
             transition: background 0.3s, box-shadow 0.3s;
         }
         .scan-line.stock-active { background: #f5af19; box-shadow: 0 0 4px #f5af19; }
         @keyframes scanMove { 0% { top: 10px; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 250px; opacity: 0; } }
+        
         .corner {
             position: absolute; width: 40px; height: 40px;
-            border: 4px solid #4e54c8; z-index: 11;
-            pointer-events: none;
+            border: 4px solid #4e54c8; z-index: 11; pointer-events: none;
             transition: border-color 0.3s;
         }
         .corner.stock-active { border-color: #f5af19; }
@@ -154,8 +105,10 @@
         .tr { top: 0; right: 0; border-left: none; border-bottom: none; border-radius: 0 15px 0 0; }
         .bl { bottom: 0; left: 0; border-right: none; border-top: none; border-radius: 0 0 0 15px; }
         .br { bottom: 0; right: 0; border-left: none; border-top: none; border-radius: 0 0 15px 0; }
+
         .scanner-controls { display: flex; gap: 10px; justify-content: center; }
         .scan-status-msg { font-size: 0.8rem; color: #666; margin-bottom: 5px; height: 1.2em; }
+        .scan-status-msg.error { color: #e74c3c; font-weight: bold; }
         .scan-status-msg.active { color: #27ae60; font-weight: bold; }
 
         /* --- INPUT MANUAL --- */
@@ -171,8 +124,7 @@
         /* --- STOCK MODE VISUAL --- */
         .stock-mode-container {
             display: none; padding: 20px; text-align: center; background: #fff8e1;
-            border-top: 2px dashed #f5af19; border-bottom: 2px dashed #f5af19;
-            animation: fadeIn 0.5s;
+            border-top: 2px dashed #f5af19; border-bottom: 2px dashed #f5af19; animation: fadeIn 0.5s;
         }
         .stock-mode-container.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -180,21 +132,14 @@
         .stock-title { font-weight: bold; font-size: 1.1rem; color: #d35400; margin-bottom: 5px; }
         .stock-desc { font-size: 0.85rem; color: #e67e22; line-height: 1.4; }
 
-        /* --- CART (Hidden in Stock Mode) --- */
+        /* --- CART --- */
         .cart-section { padding: 15px; background: white; flex: 1; }
-        .cart-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 10px; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px;
-        }
-        .cart-count {
-            background: #4e54c8; color: white; padding: 2px 10px;
-            border-radius: 12px; font-size: 0.75rem; font-weight: 600;
-        }
+        .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; }
+        .cart-count { background: #4e54c8; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
         .cart-items { max-height: 250px; overflow-y: auto; padding-right: 3px; }
         .cart-item {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 8px; background: #f8f9fa; border-radius: 8px;
-            margin-bottom: 6px; animation: slideIn 0.2s ease;
+            padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 6px; animation: slideIn 0.2s ease;
         }
         @keyframes slideIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .cart-item-info { flex: 1; min-width: 0; padding-right: 5px; }
@@ -208,19 +153,18 @@
         }
         .qty-val { font-size: 0.9rem; font-weight: 600; min-width: 15px; text-align: center; }
         .delete-btn {
-            background: #ffebee; color: #e74c3c; border: none;
-            width: 28px; height: 28px; border-radius: 6px;
-            cursor: pointer; margin-left: 5px; display: flex; align-items: center; justify-content: center;
+            background: #ffebee; color: #e74c3c; border: none; width: 28px; height: 28px;
+            border-radius: 6px; cursor: pointer; margin-left: 5px; display: flex; align-items: center; justify-content: center;
         }
 
         /* --- TOTAL & PAYMENT --- */
         .total-section {
             padding: 15px; background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
-            color: white; border-radius: 20px 20px 0 0; margin-top: 10px;
-            transition: background 0.3s;
+            color: white; border-radius: 20px 20px 0 0; margin-top: 10px; transition: background 0.3s;
         }
         .total-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.85rem; opacity: 0.9; }
         .total-row.grand-total { font-size: 1.3rem; font-weight: 800; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); opacity: 1; }
+        
         .payment-section { padding: 15px; background: white; }
         .payment-input {
             width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px;
@@ -247,7 +191,6 @@
         .btn:active { transform: scale(0.98); }
         .btn-danger { background: #e74c3c; color: white; }
         .btn-success { background: #27ae60; color: white; }
-        .btn-print { background: #2980b9; color: white; }
 
         /* --- MODALS --- */
         .modal-overlay {
@@ -271,7 +214,7 @@
         .form-group input { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
 
-        /* --- SETTINGS UI --- */
+        /* --- SETTINGS & REPORTS --- */
         .settings-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; }
         .settings-tab {
             padding: 8px 2px; border: 1px solid #ddd; border-radius: 6px;
@@ -286,7 +229,7 @@
             width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;
             margin-bottom: 10px; outline: none; font-size: 0.9rem;
         }
-        .stock-list { max-height: 300px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+        .stock-list { max-height: 400px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
         .stock-item {
             padding: 10px; border-bottom: 1px solid #eee; display: flex;
             justify-content: space-between; align-items: center; font-size: 0.85rem;
@@ -313,14 +256,20 @@
             display: flex; justify-content: space-between; align-items: center;
             margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3);
         }
-        .report-list { max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
-        .report-item { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; word-break: break-word; }
+        .report-list { max-height: 300px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+        .report-item { 
+            padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; 
+            word-break: break-word; 
+        }
         .report-item:last-child { border-bottom: none; }
         .report-detail-items {
             font-size: 0.8rem; color: #555; margin-top: 4px; 
             padding-left: 10px; border-left: 3px solid #4e54c8;
         }
-        .report-item-profit { color: #27ae60; font-weight: 600; font-size: 0.75rem; display: inline-block; margin-left: 5px; }
+        .report-item-profit {
+            color: #27ae60; font-weight: 600; font-size: 0.75rem;
+            display: inline-block; margin-left: 5px;
+        }
 
         /* --- BLUETOOTH CONTROL --- */
         .bluetooth-status {
@@ -375,7 +324,7 @@
             </div>
             <div class="scanner-controls">
                 <button class="btn btn-primary" id="startBtn" onclick="startScanner()" style="background:#4e54c8; color:white; padding:8px 20px; border-radius:20px;">📷 Mulai Scan</button>
-                <button class="btn btn-danger hidden" id="stopBtn" onclick="stopScanner()" style="padding:8px 20px; border-radius:20px;">⏹ Stop</button>
+                <button class="btn btn-danger" id="stopBtn" onclick="stopScanner()" style="padding:8px 20px; border-radius:20px;">⏹ Stop</button>
             </div>
         </div>
 
@@ -383,10 +332,7 @@
         <div class="stock-mode-container" id="stockModeContainer">
             <div class="stock-icon-large">📦</div>
             <div class="stock-title">Mode Inventaris / Stok</div>
-            <div class="stock-desc">
-                Scan atau ketik kode barcode untuk menambah barang baru ke database.<br>
-                Keranjang penjualan disembunyikan.
-            </div>
+            <div class="stock-desc">Scan atau ketik kode barcode untuk menambah barang baru.</div>
         </div>
 
         <!-- Manual Input -->
@@ -397,7 +343,7 @@
             </div>
         </div>
 
-        <!-- Cart Section (Hidden in Stok Mode) -->
+        <!-- Cart Section -->
         <div class="cart-section" id="cartSection">
             <div class="cart-header">
                 <h3>Keranjang</h3>
@@ -410,7 +356,7 @@
             </div>
         </div>
 
-        <!-- Total & Payment (Hidden in Stok Mode) -->
+        <!-- Total & Payment -->
         <div class="total-section" id="totalSection">
             <div class="total-row">
                 <span>Subtotal</span>
@@ -446,7 +392,7 @@
         </div>
     </div>
 
-    <!-- Modal: Product Not Found (Jual Mode) -->
+    <!-- Modal: Product Not Found -->
     <div class="modal-overlay" id="productModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -505,7 +451,7 @@
         </div>
     </div>
 
-    <!-- Modal: Edit Stock (Settings) -->
+    <!-- Modal: Edit Stock -->
     <div class="modal-overlay" id="editStockModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -532,7 +478,7 @@
         </div>
     </div>
 
-    <!-- Modal: Settings & Reports (FULL UI) -->
+    <!-- Modal: Settings & Reports -->
     <div class="modal-overlay" id="settingsModal">
         <div class="modal-content" style="max-height:85vh; overflow-y:auto;">
             <div class="modal-header">
@@ -573,7 +519,6 @@
                 <div style="text-align:right; margin-bottom:5px; font-size:0.75rem; color:#666;" id="stockCountDisplay">0 Barang</div>
                 <div class="stock-list" id="stockListContainer">
                     <!-- List populated by JS -->
-                    <div style="padding:15px; text-align:center; color:#999;">Memuat stok...</div>
                 </div>
             </div>
 
@@ -662,6 +607,7 @@
         let cart = [];
         let appSettings = { storeName: 'TOKO MAJU JAYA', storeAddress: 'Jl. Merdeka No. 1', taxRate: 10 };
         
+        // SCANNER VARIABLES
         let html5QrCode = null;
         let isScanning = false;
         let currentMode = 'jual';
@@ -671,7 +617,7 @@
         // Bluetooth Variables
         let bluetoothDevice = null;
         let bluetoothCharacteristic = null;
-        const ESC_POS_SERVICE = '000018f0-0000-1000-8000-00805f9b34fb'; 
+        const ESC_POS_SERVICE = '000018f0-0000-1000-8000-00805f9b34fb';
         const ESC_POS_WRITE = '00002af1-0000-1000-8000-00805f9b34fb';
 
         // --- AUDIO SYSTEM ---
@@ -703,6 +649,10 @@
             loadData();
             renderCart();
             updateSettingsUI();
+            // Cek status library saat load
+            if (!window.Html5Qrcode && !window.html5Qrcode) {
+                showNotification('Mode Scanner Offline aktif. Gunakan Input Manual.', 'error');
+            }
         };
 
         function loadData() {
@@ -747,7 +697,7 @@
             document.getElementById(id).classList.add('active');
         }
 
-        // --- MODE SWITCHING & UI CHANGES ---
+        // --- MODE SWITCHING ---
         function switchMode(mode) {
             currentMode = mode;
             const btnJual = document.getElementById('modeJual');
@@ -791,34 +741,60 @@
             scanMsg.textContent = mode === 'stok' ? "Siap scan barang baru..." : "Siap scan kasir...";
         }
 
-        // --- SCANNER LOGIC ---
+        // --- SCANNER LOGIC (FIXED) ---
         async function startScanner() {
             if (isScanning) return;
+            
             const Html5QrcodeConstructor = window.Html5Qrcode || window.html5Qrcode;
             if (!Html5QrcodeConstructor) {
-                showNotification('Library scanner tidak ditemukan. Gunakan input manual.', 'error');
+                showNotification('Library scanner tidak ditemukan.', 'error');
                 return;
             }
 
             try {
+                // Pastikan elemen reader bersih sebelum scan baru
+                const readerEl = document.getElementById('reader');
+                readerEl.innerHTML = '';
+
                 html5QrCode = new Html5QrcodeConstructor("reader");
                 const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+                
                 await html5QrCode.start(
                     { facingMode: "environment" }, 
                     config, 
                     onScanSuccess, 
-                    (err) => { }
+                    (errorMessage, error) => {
+                        // Log error ringan tapi jangan spam
+                        // console.warn(errorMessage);
+                    }
                 );
                 isScanning = true;
                 document.getElementById('startBtn').classList.add('hidden');
                 document.getElementById('stopBtn').classList.remove('hidden');
                 document.getElementById('scanLine').classList.remove('hidden');
-                document.getElementById('scanStatusMsg').textContent = "Scanning...";
-                document.getElementById('scanStatusMsg').classList.add('active');
+                
+                const scanMsg = document.getElementById('scanStatusMsg');
+                scanMsg.textContent = "Scanning...";
+                scanMsg.classList.remove('error');
+                scanMsg.classList.add('active');
                 showNotification('📷 Kamera Aktif', 'success');
             } catch (err) {
-                showNotification('Gagal akses kamera', 'error');
-                console.error(err);
+                console.error("Scanner Error:", err);
+                
+                let errorMsg = "Gagal akses kamera";
+                if (err.name === 'NotAllowedError') errorMsg = "Izin kamera ditolak. Cek gembok di alamat browser.";
+                else if (err.name === 'NotFoundError') errorMsg = "Kamera tidak ditemukan.";
+                else if (err.name === 'NotSupportedError') errorMsg = "Browser tidak mendukung kamera.";
+                else if (err.name === 'NotReadableError') errorMsg = "Kamera mungkin sedang dipakai aplikasi lain.";
+                
+                showNotification(errorMsg, 'error');
+                
+                const scanMsg = document.getElementById('scanStatusMsg');
+                scanMsg.textContent = "Gagal: " + err.name;
+                scanMsg.classList.add('error');
+                
+                // Tampilkan tombol stop jika macet
+                document.getElementById('stopBtn').classList.remove('hidden');
             }
         }
 
@@ -832,7 +808,11 @@
                 document.getElementById('scanLine').classList.add('hidden');
                 document.getElementById('scanStatusMsg').textContent = "Kamera non-aktif";
                 document.getElementById('scanStatusMsg').classList.remove('active');
-                document.getElementById('reader').innerHTML = "";
+                document.getElementById('scanStatusMsg').classList.remove('error');
+                
+                // Bersihkan elemen video agar tidak hang
+                const readerEl = document.getElementById('reader');
+                if(readerEl) readerEl.innerHTML = "";
             } catch (err) {
                 console.error(err);
             }
@@ -847,7 +827,10 @@
             const statusMsg = document.getElementById('scanStatusMsg');
             statusMsg.textContent = "✅ Terbaca: " + decodedText;
             statusMsg.style.color = "#27ae60";
-            setTimeout(() => { statusMsg.textContent = currentMode === 'stok' ? "Siap scan barang baru..." : "Scanning..."; statusMsg.style.color = "#666"; }, 1000);
+            setTimeout(() => { 
+                statusMsg.textContent = currentMode === 'stok' ? "Siap scan barang baru..." : "Scanning..."; 
+                statusMsg.style.color = "#666"; 
+            }, 1000);
 
             if (currentMode === 'stok') handleAddProductScan(decodedText);
             else handleJualScan(decodedText);
@@ -950,14 +933,17 @@
                 container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Belum ada stok barang.</div>';
                 return;
             }
+
             const filtered = keys.filter(code => {
                 const p = productDatabase[code];
                 return code.toLowerCase().includes(search) || p.name.toLowerCase().includes(search);
             });
+
             if (filtered.length === 0) {
                 container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Barang tidak ditemukan.</div>';
                 return;
             }
+
             container.innerHTML = filtered.map(code => {
                 const p = productDatabase[code];
                 return `
@@ -1119,7 +1105,7 @@
             };
             salesHistory.unshift(tx);
             saveData();
-
+            
             const now = new Date(tx.date);
             document.getElementById('rDatePreview').textContent = now.toLocaleString('id-ID');
             document.getElementById('rStoreNamePreview').textContent = appSettings.storeName;
@@ -1136,6 +1122,7 @@
             
             document.getElementById('receiptItemsPreview').innerHTML = html;
             document.getElementById('rTotalPreview').textContent = 'TOTAL: ' + formatRupiah(total);
+            
             playBeep();
             openModal('receiptModal');
         }
@@ -1161,11 +1148,9 @@
             el.classList.add('active');
             document.querySelectorAll('.settings-content').forEach(c => c.classList.remove('active'));
             document.getElementById('tab-'+tabName).classList.add('active');
-            
             const footer = document.getElementById('settingsFooter');
             if(tabName !== 'general') footer.style.display = 'none';
             else footer.style.display = 'flex';
-
             if (tabName === 'stock') renderStockList();
         }
 
@@ -1224,7 +1209,6 @@
                     const dateObj = new Date(tx.date);
                     const dateStr = dateObj.toLocaleDateString('id-ID', {day: 'numeric', month:'short'});
                     const timeStr = dateObj.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
-                    
                     let itemsHtml = tx.items.map(i => {
                         const itemCost = i.cost || 0;
                         const itemProfit = (i.price - itemCost) * i.qty;
@@ -1234,10 +1218,8 @@
                             return `<div>${i.name} (x${i.qty})</div>`;
                         }
                     }).join('');
-
                     const txCost = tx.totalCost || tx.items.reduce((s, i) => s + ((i.cost || 0) * i.qty), 0);
                     const txProfit = tx.total - txCost;
-
                     return `
                         <div class="report-item">
                             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -1348,7 +1330,7 @@
                 showNotification('Bluetooth Terhubung!', 'success');
             } catch (error) {
                 console.error(error);
-                showNotification('Gagal koneksi bluetooth', 'error');
+                showNotification('Gagal koneksi bluetooth: ' + error, 'error');
             }
         }
 
@@ -1372,27 +1354,23 @@
             const encoder = new TextEncoder();
             const lines = [];
             
-            // Header
             lines.push(new Uint8Array([0x1B, 0x61, 0x01])); // Center
             lines.push(encoder.encode(appSettings.storeName + '\n'));
             lines.push(encoder.encode(new Date().toLocaleString('id-ID') + '\n'));
             lines.push(new Uint8Array([0x1B, 0x61, 0x00])); // Left
-
-            // Items
+            
             cart.forEach(item => {
                 const line = `${item.name.substring(0,16)} x${item.qty}         ${formatRupiah(item.price*item.qty).replace('Rp ', '')}\n`;
                 lines.push(encoder.encode(line));
             });
 
-            // Total
             const total = getGrandTotal();
             lines.push(new Uint8Array([0x1B, 0x45])); // Bold
             lines.push(encoder.encode('------------------------\n'));
             lines.push(encoder.encode(`TOTAL     ${formatRupiah(total).replace('Rp ', '')}\n`));
             lines.push(new Uint8Array([0x1B, 0x46, 0x00])); // Bold off
 
-            // Cut
-            lines.push(new Uint8Array([0x0A, 0x0A, 0x0A, 0x1D, 0x56, 0x00])); 
+            lines.push(new Uint8Array([0x0A, 0x0A, 0x0A, 0x1D, 0x56, 0x00])); // Cut
 
             try {
                 for (let line of lines) {
