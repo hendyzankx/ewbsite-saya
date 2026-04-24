@@ -3,16 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kasir Scan Pro - Offline & Bluetooth</title>
+    <title>Kasir Scan Pro - Fix Settings</title>
     
     <!-- LIBRARY SCANNER (DI-EMBEDDED AGAR OFFLINE) -->
-    <!-- Kami menyertakan library ini agar file bisa jalan tanpa internet -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" id="html5-qrcode-lib"></script>
     
     <script>
         // FALLBACK SCANNER (Jika Offline saat load pertama)
-        // Jika library di atas gagal load (karena offline), kita pakai versi minimal yang tertanam di sini
-        // Ini memastikan fitur scan tetap jalan meskipun total tanpa internet.
         window.Html5Qrcode = (function() {
             function t() {
                 this._isScanning = !1, this._localMediaStream = null, this._element = null
@@ -39,18 +36,15 @@
                     }
                 }).then(function(t) {
                     var o = document.createElement("video");
-                    return o.srcObject = t, o.setAttribute("playsinline", !0), o.setAttribute("autoplay", !0), o.style.width = o.qrbox ? o.qrbox.width : "100%", o.style.height = o.qrbox ? o.qrbox.height : "100%", o
+                    return o.srcObject = t, o.setAttribute("playsinline", !0), o.setAttribute("autoplay", !0), o
                 })
             }, t.prototype._startScanningLoop = function() {
                 var t = this;
                 if (!this._isScanning) return;
-                // Simulasi scan sederhana karena library penuh terlalu besar untuk di-embed
-                // Di mode offline tanpa eksternal, user disarankan pakai input manual
-                // Namun kita coba berikan placeholder object
                 if(!this._scanInterval) {
                     this._scanInterval = setInterval(function(){
                         // Mock check
-                    }, 1000);
+                    },1000);
                 }
             }, t.prototype.getCapturedElement = function() {
                 return this._videoElement
@@ -101,33 +95,60 @@
 
         /* --- MODE SWITCH --- */
         .mode-switch-container { padding: 15px 15px 0; }
-        .mode-switch { display: flex; background: #f0f0f0; border-radius: 12px; padding: 5px; }
+        .mode-switch {
+            display: flex; background: #f0f0f0;
+            border-radius: 12px; padding: 5px;
+        }
         .mode-btn {
             flex: 1; padding: 10px; border: none; border-radius: 10px;
             font-size: 0.85rem; font-weight: 600; cursor: pointer;
             background: transparent; color: #888; transition: all 0.3s;
         }
-        .mode-btn.active { background: white; color: #4e54c8; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .mode-btn.active {
+            background: white; color: #4e54c8;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
         .mode-btn.active.stok-active { color: #f5af19; background: #fff8e1; }
 
         /* --- SCANNER SECTION --- */
-        .scanner-wrapper { padding: 15px; background: #f8f9fa; text-align: center; border-bottom: 1px solid #eee; }
+        .scanner-wrapper {
+            padding: 15px; background: #f8f9fa; text-align: center;
+            border-bottom: 1px solid #eee;
+        }
         #reader-wrapper {
-            position: relative; width: 260px; height: 260px; margin: 0 auto 15px;
-            border-radius: 20px; overflow: hidden; border: 4px solid #ddd;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.1); background: #000;
+            position: relative;
+            width: 260px; 
+            height: 260px; 
+            margin: 0 auto 15px;
+            border-radius: 20px;
+            overflow: hidden;
+            border: 4px solid #ddd; 
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
+            background: #000;
             transition: border-color 0.3s;
         }
-        #reader { width: 100% !important; height: 100% !important; border: none !important; background: #000; }
+        #reader {
+            width: 100% !important;
+            height: 100% !important;
+            border: none !important;
+            background: #000;
+        }
         .scan-line {
             position: absolute; top: 0; left: 0; width: 100%; height: 2px;
             background: #e74c3c; box-shadow: 0 0 4px #e74c3c;
-            animation: scanMove 2s infinite linear; pointer-events: none; z-index: 10;
+            animation: scanMove 2s infinite linear;
+            pointer-events: none;
+            z-index: 10;
             transition: background 0.3s, box-shadow 0.3s;
         }
         .scan-line.stock-active { background: #f5af19; box-shadow: 0 0 4px #f5af19; }
         @keyframes scanMove { 0% { top: 10px; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 250px; opacity: 0; } }
-        .corner { position: absolute; width: 40px; height: 40px; border: 4px solid #4e54c8; z-index: 11; pointer-events: none; transition: border-color 0.3s; }
+        .corner {
+            position: absolute; width: 40px; height: 40px;
+            border: 4px solid #4e54c8; z-index: 11;
+            pointer-events: none;
+            transition: border-color 0.3s;
+        }
         .corner.stock-active { border-color: #f5af19; }
         .tl { top: 0; left: 0; border-right: none; border-bottom: none; border-radius: 15px 0 0 0; }
         .tr { top: 0; right: 0; border-left: none; border-bottom: none; border-radius: 0 15px 0 0; }
@@ -150,7 +171,8 @@
         /* --- STOCK MODE VISUAL --- */
         .stock-mode-container {
             display: none; padding: 20px; text-align: center; background: #fff8e1;
-            border-top: 2px dashed #f5af19; border-bottom: 2px dashed #f5af19; animation: fadeIn 0.5s;
+            border-top: 2px dashed #f5af19; border-bottom: 2px dashed #f5af19;
+            animation: fadeIn 0.5s;
         }
         .stock-mode-container.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -158,14 +180,21 @@
         .stock-title { font-weight: bold; font-size: 1.1rem; color: #d35400; margin-bottom: 5px; }
         .stock-desc { font-size: 0.85rem; color: #e67e22; line-height: 1.4; }
 
-        /* --- CART --- */
+        /* --- CART (Hidden in Stock Mode) --- */
         .cart-section { padding: 15px; background: white; flex: 1; }
-        .cart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px; }
-        .cart-count { background: #4e54c8; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+        .cart-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px;
+        }
+        .cart-count {
+            background: #4e54c8; color: white; padding: 2px 10px;
+            border-radius: 12px; font-size: 0.75rem; font-weight: 600;
+        }
         .cart-items { max-height: 250px; overflow-y: auto; padding-right: 3px; }
         .cart-item {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 6px; animation: slideIn 0.2s ease;
+            padding: 8px; background: #f8f9fa; border-radius: 8px;
+            margin-bottom: 6px; animation: slideIn 0.2s ease;
         }
         @keyframes slideIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
         .cart-item-info { flex: 1; min-width: 0; padding-right: 5px; }
@@ -187,7 +216,8 @@
         /* --- TOTAL & PAYMENT --- */
         .total-section {
             padding: 15px; background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
-            color: white; border-radius: 20px 20px 0 0; margin-top: 10px; transition: background 0.3s;
+            color: white; border-radius: 20px 20px 0 0; margin-top: 10px;
+            transition: background 0.3s;
         }
         .total-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.85rem; opacity: 0.9; }
         .total-row.grand-total { font-size: 1.3rem; font-weight: 800; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); opacity: 1; }
@@ -203,7 +233,10 @@
             background: white; color: #4e54c8; font-size: 0.8rem; font-weight: 700; cursor: pointer;
         }
         .quick-pay-btn.exact { background: #4e54c8; color: white; border: none; grid-column: span 3; }
-        .change-display { text-align: center; padding: 8px; background: #e8f5e9; border-radius: 8px; margin-top: 10px; font-weight: 700; color: #27ae60; display: none; }
+        .change-display {
+            text-align: center; padding: 8px; background: #e8f5e9;
+            border-radius: 8px; margin-top: 10px; font-weight: 700; color: #27ae60; display: none;
+        }
         .change-display.short { background: #ffebee; color: #e74c3c; }
         .action-buttons { display: flex; gap: 10px; padding: 0 15px 20px; }
         .btn {
@@ -214,7 +247,7 @@
         .btn:active { transform: scale(0.98); }
         .btn-danger { background: #e74c3c; color: white; }
         .btn-success { background: #27ae60; color: white; }
-        .btn-print { background: #2980b9; color: white; } /* Biru untuk print Bluetooth */
+        .btn-print { background: #2980b9; color: white; }
 
         /* --- MODALS --- */
         .modal-overlay {
@@ -237,6 +270,57 @@
         .form-group label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: #666; font-weight: 600; }
         .form-group input { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+
+        /* --- SETTINGS UI --- */
+        .settings-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; }
+        .settings-tab {
+            padding: 8px 2px; border: 1px solid #ddd; border-radius: 6px;
+            background: #f9f9f9; text-align: center; cursor: pointer; font-size: 0.75rem;
+        }
+        .settings-tab.active { background: #4e54c8; color: white; border-color: #4e54c8; }
+        .settings-content { display: none; }
+        .settings-content.active { display: block; }
+
+        /* STOCK LIST STYLES */
+        .stock-search {
+            width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px;
+            margin-bottom: 10px; outline: none; font-size: 0.9rem;
+        }
+        .stock-list { max-height: 300px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+        .stock-item {
+            padding: 10px; border-bottom: 1px solid #eee; display: flex;
+            justify-content: space-between; align-items: center; font-size: 0.85rem;
+        }
+        .stock-item:last-child { border-bottom: none; }
+        .stock-info { flex: 1; padding-right: 10px; }
+        .stock-name { font-weight: 700; display: block; }
+        .stock-code { color: #888; font-size: 0.75rem; }
+        .stock-price { font-weight: bold; color: #4e54c8; font-size: 0.8rem; }
+        .stock-actions { display: flex; gap: 5px; }
+        .icon-btn {
+            background: #f0f0f0; border: none; border-radius: 4px;
+            padding: 4px; cursor: pointer; color: #555;
+        }
+        .icon-btn.edit:hover { background: #e3f2fd; color: #1565c0; }
+        .icon-btn.delete:hover { background: #ffebee; color: #e74c3c; }
+
+        /* REPORT STYLES */
+        .report-card {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: center;
+        }
+        .report-row-split {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3);
+        }
+        .report-list { max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+        .report-item { padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; word-break: break-word; }
+        .report-item:last-child { border-bottom: none; }
+        .report-detail-items {
+            font-size: 0.8rem; color: #555; margin-top: 4px; 
+            padding-left: 10px; border-left: 3px solid #4e54c8;
+        }
+        .report-item-profit { color: #27ae60; font-weight: 600; font-size: 0.75rem; display: inline-block; margin-left: 5px; }
 
         /* --- BLUETOOTH CONTROL --- */
         .bluetooth-status {
@@ -265,7 +349,7 @@
         <div class="header mode-kasir" id="mainHeader">
             <div>
                 <h1 id="headerTitle">Kasir Scan Pro</h1>
-                <p id="headerSubtitle">QR/Barcode & Bluetooth</p>
+                <p id="headerSubtitle">QR/Barcode & Stok</p>
             </div>
             <button class="settings-btn" onclick="openSettings()">⚙️</button>
         </div>
@@ -295,11 +379,14 @@
             </div>
         </div>
 
-        <!-- Stock Mode Visual -->
+        <!-- Stock Mode Visual Container -->
         <div class="stock-mode-container" id="stockModeContainer">
             <div class="stock-icon-large">📦</div>
             <div class="stock-title">Mode Inventaris / Stok</div>
-            <div class="stock-desc">Scan atau ketik kode untuk tambah barang.</div>
+            <div class="stock-desc">
+                Scan atau ketik kode barcode untuk menambah barang baru ke database.<br>
+                Keranjang penjualan disembunyikan.
+            </div>
         </div>
 
         <!-- Manual Input -->
@@ -310,7 +397,7 @@
             </div>
         </div>
 
-        <!-- Cart Section -->
+        <!-- Cart Section (Hidden in Stok Mode) -->
         <div class="cart-section" id="cartSection">
             <div class="cart-header">
                 <h3>Keranjang</h3>
@@ -323,7 +410,7 @@
             </div>
         </div>
 
-        <!-- Total & Payment -->
+        <!-- Total & Payment (Hidden in Stok Mode) -->
         <div class="total-section" id="totalSection">
             <div class="total-row">
                 <span>Subtotal</span>
@@ -359,7 +446,7 @@
         </div>
     </div>
 
-    <!-- Modal: Product Not Found -->
+    <!-- Modal: Product Not Found (Jual Mode) -->
     <div class="modal-overlay" id="productModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -414,6 +501,116 @@
             <div class="modal-actions">
                 <button class="btn btn-danger" style="flex:1" onclick="closeModal('addProductModal')">Batal</button>
                 <button class="btn btn-success" style="flex:1" onclick="saveNewProduct()">💾 Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Edit Stock (Settings) -->
+    <div class="modal-overlay" id="editStockModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>✏️ Edit Barang</h3>
+                <button class="close-modal" onclick="closeModal('editStockModal')">&times;</button>
+            </div>
+            <input type="hidden" id="editCode">
+            <div class="form-group">
+                <label>Nama Barang</label>
+                <input type="text" id="editName">
+            </div>
+            <div class="form-group">
+                <label>Harga Jual (Rp)</label>
+                <input type="number" id="editPrice">
+            </div>
+            <div class="form-group">
+                <label>Harga Beli / Modal (Rp)</label>
+                <input type="number" id="editCost">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-danger" style="flex:1" onclick="closeModal('editStockModal')">Batal</button>
+                <button class="btn btn-success" style="flex:1" onclick="saveEditStock()">Simpan Perubahan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Settings & Reports (FULL UI) -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content" style="max-height:85vh; overflow-y:auto;">
+            <div class="modal-header">
+                <h3>⚙️ Pengaturan</h3>
+                <button class="close-modal" onclick="closeModal('settingsModal')">&times;</button>
+            </div>
+            
+            <!-- 4 Tabs -->
+            <div class="settings-tabs">
+                <div class="settings-tab active" onclick="switchSettingsTab('general', this)">Toko</div>
+                <div class="settings-tab" onclick="switchSettingsTab('stock', this)">Stok</div>
+                <div class="settings-tab" onclick="switchSettingsTab('reports', this)">Laporan</div>
+                <div class="settings-tab" onclick="switchSettingsTab('backup', this)">Data</div>
+            </div>
+
+            <!-- Tab 1: General Settings -->
+            <div id="tab-general" class="settings-content active">
+                <div class="form-group">
+                    <label>Nama Toko</label>
+                    <input type="text" id="settingStoreName" value="TOKO MAJU JAYA">
+                </div>
+                <div class="form-group">
+                    <label>Alamat</label>
+                    <input type="text" id="settingStoreAddress" value="Jl. Merdeka No. 1">
+                </div>
+                <div class="form-group">
+                    <label>Pajak PPN (%)</label>
+                    <input type="number" id="settingTaxRate" value="10">
+                </div>
+                <div style="margin-top:20px; padding-top:15px; border-top:1px dashed #ccc;">
+                    <button class="btn btn-danger" style="width:100%" onclick="resetFactory()">⚠️ Reset Pabrik</button>
+                </div>
+            </div>
+
+            <!-- Tab 2: Stock Management -->
+            <div id="tab-stock" class="settings-content">
+                <input type="text" id="stockSearch" class="stock-search" placeholder="Cari nama barang atau kode..." oninput="renderStockList()">
+                <div style="text-align:right; margin-bottom:5px; font-size:0.75rem; color:#666;" id="stockCountDisplay">0 Barang</div>
+                <div class="stock-list" id="stockListContainer">
+                    <!-- List populated by JS -->
+                    <div style="padding:15px; text-align:center; color:#999;">Memuat stok...</div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Reports -->
+            <div id="tab-reports" class="settings-content">
+                <div class="report-card">
+                    <div style="font-size:0.8rem; opacity:0.9">Omset Bulan Ini</div>
+                    <div style="font-size:1.5rem; font-weight:bold" id="monthlyReportTotal">Rp 0</div>
+                    <div style="font-size:0.75rem" id="monthlyReportCount">0 Transaksi</div>
+                    <div class="report-row-split">
+                        <div>
+                            <div style="font-size:0.7rem; opacity:0.8">Total Laba Bersih</div>
+                            <div style="font-weight:bold; font-size:1.2rem;" id="monthlyReportProfit">Rp 0</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:0.7rem; opacity:0.8">Margin Rata-rata</div>
+                            <div style="font-weight:bold;" id="monthlyReportMargin">0%</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="font-size:0.75rem; color:#888; margin-bottom:5px;">Riwayat Transaksi Bulan Ini:</div>
+                <div class="report-list" id="reportListContainer">
+                    <div style="padding:15px; text-align:center; color:#999;">Belum ada data.</div>
+                </div>
+            </div>
+
+            <!-- Tab 4: Backup -->
+            <div id="tab-backup" class="settings-content">
+                <button class="btn" style="width:100%; margin-bottom:8px; border:1px solid #4e54c8; background:white; color:#4e54c8;" onclick="exportData()">📥 Download Backup (JSON)</button>
+                <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
+                <button class="btn" style="width:100%; margin-bottom:8px; border:1px solid #4e54c8; background:white; color:#4e54c8;" onclick="document.getElementById('importFile').click()">📤 Upload Backup</button>
+                <button class="btn" style="width:100%; border:1px solid #4e54c8; background:white; color:#4e54c8;" onclick="exportCSV()">📊 Download Laporan CSV</button>
+            </div>
+
+            <div class="modal-actions" id="settingsFooter">
+                <button class="btn" style="flex:1; background:#eee; color:#333" onclick="closeModal('settingsModal')">Tutup</button>
+                <button class="btn" style="flex:1; background:#4e54c8; color:white" onclick="saveSettings()">Simpan</button>
             </div>
         </div>
     </div>
@@ -474,8 +671,8 @@
         // Bluetooth Variables
         let bluetoothDevice = null;
         let bluetoothCharacteristic = null;
-        const ESC_POS_SERVICE = '000018f0-0000-1000-8000-00805f9b34fb'; // Generic Print Service
-        const ESC_POS_WRITE = '00002af1-0000-1000-8000-00805f9b34fb'; // Write Characteristic
+        const ESC_POS_SERVICE = '000018f0-0000-1000-8000-00805f9b34fb'; 
+        const ESC_POS_WRITE = '00002af1-0000-1000-8000-00805f9b34fb';
 
         // --- AUDIO SYSTEM ---
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -550,7 +747,7 @@
             document.getElementById(id).classList.add('active');
         }
 
-        // --- MODE SWITCHING ---
+        // --- MODE SWITCHING & UI CHANGES ---
         function switchMode(mode) {
             currentMode = mode;
             const btnJual = document.getElementById('modeJual');
@@ -590,15 +787,14 @@
                 document.getElementById('manualCheckBtn').textContent = "Cek";
                 showNotification('🛍️ Mode Kasir Aktif');
             }
-            document.getElementById('scanStatusMsg').textContent = mode === 'stok' ? "Siap scan barang baru..." : "Siap scan kasir...";
+            const scanMsg = document.getElementById('scanStatusMsg');
+            scanMsg.textContent = mode === 'stok' ? "Siap scan barang baru..." : "Siap scan kasir...";
         }
 
         // --- SCANNER LOGIC ---
         async function startScanner() {
             if (isScanning) return;
-            // Cek apakah library utama terpanggil atau fallback
             const Html5QrcodeConstructor = window.Html5Qrcode || window.html5Qrcode;
-            
             if (!Html5QrcodeConstructor) {
                 showNotification('Library scanner tidak ditemukan. Gunakan input manual.', 'error');
                 return;
@@ -692,7 +888,7 @@
         // --- STOCK LOGIC ---
         function handleAddProductScan(code) {
             if (productDatabase[code]) {
-                showNotification('Barang sudah ada!', 'error');
+                showNotification('Barang sudah ada! Gunakan menu Stok untuk edit.', 'error');
             } else {
                 openAddProductModal(code, 'stok');
             }
@@ -743,6 +939,73 @@
             document.getElementById('stockModeContainer').innerHTML = `<span>✅ Berhasil menambah <b>${name}</b></span>`;
         }
 
+        // --- STOCK MANAGEMENT (Settings Tab) ---
+        function renderStockList() {
+            const container = document.getElementById('stockListContainer');
+            const search = document.getElementById('stockSearch').value.toLowerCase();
+            const keys = Object.keys(productDatabase);
+            document.getElementById('stockCountDisplay').textContent = keys.length + ' Barang';
+
+            if (keys.length === 0) {
+                container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Belum ada stok barang.</div>';
+                return;
+            }
+            const filtered = keys.filter(code => {
+                const p = productDatabase[code];
+                return code.toLowerCase().includes(search) || p.name.toLowerCase().includes(search);
+            });
+            if (filtered.length === 0) {
+                container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Barang tidak ditemukan.</div>';
+                return;
+            }
+            container.innerHTML = filtered.map(code => {
+                const p = productDatabase[code];
+                return `
+                <div class="stock-item">
+                    <div class="stock-info">
+                        <span class="stock-name">${p.name}</span>
+                        <span class="stock-code">${code}</span>
+                    </div>
+                    <div class="stock-price">${formatRupiah(p.price)}</div>
+                    <div class="stock-actions">
+                        <button class="icon-btn edit" onclick="openEditStock('${code}')" title="Edit">✏️</button>
+                        <button class="icon-btn delete" onclick="deleteStock('${code}')" title="Hapus">🗑️</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function openEditStock(code) {
+            const p = productDatabase[code];
+            document.getElementById('editCode').value = code;
+            document.getElementById('editName').value = p.name;
+            document.getElementById('editPrice').value = p.price;
+            document.getElementById('editCost').value = p.cost || 0;
+            openModal('editStockModal');
+        }
+
+        function saveEditStock() {
+            const code = document.getElementById('editCode').value;
+            const name = document.getElementById('editName').value.trim();
+            const price = parseInt(document.getElementById('editPrice').value);
+            const cost = parseInt(document.getElementById('editCost').value) || 0;
+            if (!name || !price) return showNotification('Data tidak lengkap', 'error');
+            productDatabase[code] = { name, price, cost };
+            saveData();
+            renderStockList();
+            closeModal('editStockModal');
+            showNotification('Perubahan disimpan', 'success');
+        }
+
+        function deleteStock(code) {
+            if(confirm('Yakin ingin menghapus barang ini dari database?')) {
+                delete productDatabase[code];
+                saveData();
+                renderStockList();
+                showNotification('Barang dihapus', 'success');
+            }
+        }
+
         // --- CART UI ---
         function renderCart() {
             const container = document.getElementById('cartItems');
@@ -785,12 +1048,10 @@
             const sub = cart.reduce((a, i) => a + (i.price * i.qty), 0);
             const tax = Math.round(sub * (appSettings.taxRate / 100));
             const total = sub + tax;
-
             document.getElementById('subtotal').textContent = formatRupiah(sub);
             document.getElementById('taxRateDisplay').textContent = appSettings.taxRate;
             document.getElementById('tax').textContent = formatRupiah(tax);
             document.getElementById('grandTotal').textContent = formatRupiah(total);
-
             const exactBtn = document.getElementById('exactBtn');
             exactBtn.textContent = cart.length > 0 ? `💰 Pas (${formatRupiah(total)})` : '💰 Uang Pas';
             calculateChange();
@@ -846,9 +1107,7 @@
             const total = getGrandTotal();
             const pay = parseFloat(document.getElementById('paymentAmount').value) || 0;
             if (pay < total) return showNotification('Uang kurang!', 'error');
-
             const totalCost = cart.reduce((sum, item) => sum + ((item.cost || 0) * item.qty), 0);
-
             const tx = {
                 id: 'TX-' + Date.now(),
                 date: new Date().toISOString(),
@@ -860,8 +1119,7 @@
             };
             salesHistory.unshift(tx);
             saveData();
-            
-            // Setup Receipt Preview
+
             const now = new Date(tx.date);
             document.getElementById('rDatePreview').textContent = now.toLocaleString('id-ID');
             document.getElementById('rStoreNamePreview').textContent = appSettings.storeName;
@@ -878,7 +1136,6 @@
             
             document.getElementById('receiptItemsPreview').innerHTML = html;
             document.getElementById('rTotalPreview').textContent = 'TOTAL: ' + formatRupiah(total);
-            
             playBeep();
             openModal('receiptModal');
         }
@@ -891,6 +1148,170 @@
             showNotification('Transaksi Selesai', 'success');
         }
 
+        // --- SETTINGS & REPORTS ---
+        function openSettings() {
+            updateSettingsUI();
+            renderReports();
+            renderStockList();
+            openModal('settingsModal');
+        }
+
+        function switchSettingsTab(tabName, el) {
+            document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            document.querySelectorAll('.settings-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('tab-'+tabName).classList.add('active');
+            
+            const footer = document.getElementById('settingsFooter');
+            if(tabName !== 'general') footer.style.display = 'none';
+            else footer.style.display = 'flex';
+
+            if (tabName === 'stock') renderStockList();
+        }
+
+        function updateSettingsUI() {
+            document.getElementById('settingStoreName').value = appSettings.storeName;
+            document.getElementById('settingStoreAddress').value = appSettings.storeAddress;
+            document.getElementById('settingTaxRate').value = appSettings.taxRate;
+        }
+
+        function saveSettings() {
+            appSettings.storeName = document.getElementById('settingStoreName').value;
+            appSettings.storeAddress = document.getElementById('settingStoreAddress').value;
+            appSettings.taxRate = parseFloat(document.getElementById('settingTaxRate').value) || 0;
+            saveData();
+            updateTotals();
+            closeModal('settingsModal');
+            showNotification('Pengaturan Disimpan');
+        }
+
+        function renderReports() {
+            const now = new Date();
+            const curMonth = now.getMonth();
+            const curYear = now.getFullYear();
+            let monthlyRevenue = 0;
+            let monthlyCost = 0;
+            let monthlyCount = 0;
+            
+            const monthlyTx = salesHistory.filter(tx => {
+                const d = new Date(tx.date);
+                return d.getMonth() === curMonth && d.getFullYear() === curYear;
+            });
+
+            monthlyTx.forEach(tx => {
+                monthlyRevenue += tx.total;
+                if (tx.totalCost !== undefined) {
+                    monthlyCost += tx.totalCost;
+                } else {
+                    monthlyCost += tx.items.reduce((sum, i) => sum + ((i.cost || 0) * i.qty), 0);
+                }
+                monthlyCount++;
+            });
+
+            const monthlyProfit = monthlyRevenue - monthlyCost;
+            const margin = monthlyRevenue > 0 ? Math.round((monthlyProfit / monthlyRevenue) * 100) : 0;
+
+            document.getElementById('monthlyReportTotal').textContent = formatRupiah(monthlyRevenue);
+            document.getElementById('monthlyReportCount').textContent = monthlyCount + ' Transaksi';
+            document.getElementById('monthlyReportProfit').textContent = formatRupiah(monthlyProfit);
+            document.getElementById('monthlyReportMargin').textContent = margin + '%';
+
+            const list = document.getElementById('reportListContainer');
+            if (monthlyTx.length === 0) {
+                list.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Tidak ada data bulan ini.</div>';
+            } else {
+                list.innerHTML = monthlyTx.map(tx => {
+                    const dateObj = new Date(tx.date);
+                    const dateStr = dateObj.toLocaleDateString('id-ID', {day: 'numeric', month:'short'});
+                    const timeStr = dateObj.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+                    
+                    let itemsHtml = tx.items.map(i => {
+                        const itemCost = i.cost || 0;
+                        const itemProfit = (i.price - itemCost) * i.qty;
+                        if (itemCost > 0) {
+                            return `<div>${i.name} (x${i.qty}) <span class="report-item-profit">+${formatRupiah(itemProfit)}</span></div>`;
+                        } else {
+                            return `<div>${i.name} (x${i.qty})</div>`;
+                        }
+                    }).join('');
+
+                    const txCost = tx.totalCost || tx.items.reduce((s, i) => s + ((i.cost || 0) * i.qty), 0);
+                    const txProfit = tx.total - txCost;
+
+                    return `
+                        <div class="report-item">
+                            <div style="display:flex; justify-content:space-between; align-items:center;">
+                                <span style="font-weight:bold; font-size:0.9rem;">${dateStr} • ${timeStr}</span>
+                                <span style="font-weight:bold; color:#4e54c8;">${formatRupiah(tx.total)}</span>
+                            </div>
+                            <div class="report-detail-items">
+                                ${itemsHtml}
+                                ${txCost > 0 ? `<div style="margin-top:4px; font-weight:bold; color:#27ae60; border-top:1px dashed #ddd; padding-top:2px;">Total Laba Tx: ${formatRupiah(txProfit)}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        function resetFactory() {
+            if(confirm('PERINGATAN: Semua data akan dihapus permanen!')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        function exportData() {
+            const data = { products: productDatabase, settings: appSettings, history: salesHistory };
+            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'backup_kasir_' + Date.now() + '.json';
+            a.click();
+        }
+
+        function importData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                try {
+                    const data = JSON.parse(ev.target.result);
+                    if(data.products) productDatabase = data.products;
+                    if(data.settings) appSettings = data.settings;
+                    if(data.history) salesHistory = data.history;
+                    saveData();
+                    renderCart();
+                    updateSettingsUI();
+                    renderStockList();
+                    showNotification('Backup berhasil dimuat');
+                } catch(err) {
+                    showNotification('File backup tidak valid', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function exportCSV() {
+            let csv = 'Tanggal,Waktu,Total,Profit,Item List\n';
+            salesHistory.forEach(tx => {
+                const d = new Date(tx.date);
+                const dateStr = d.toLocaleDateString('id-ID');
+                const timeStr = d.toLocaleTimeString('id-ID');
+                const items = tx.items.map(i=>`${i.name} (x${i.qty})`).join('; ');
+                const txCost = tx.totalCost || tx.items.reduce((s, i) => s + ((i.cost || 0) * i.qty), 0);
+                const profit = tx.total - txCost;
+                csv += `"${dateStr}","${timeStr}",${tx.total},${profit},"${items}"\n`;
+            });
+            const blob = new Blob([csv], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'laporan_penjualan.csv';
+            a.click();
+        }
+
         // --- BLUETOOTH LOGIC ---
         async function connectBluetooth() {
             if (!navigator.bluetooth) {
@@ -899,10 +1320,9 @@
 
             try {
                 showNotification('Mencari printer...', 'normal');
-                // Request device dengan filter ESC/POS (Umum untuk thermal printer)
                 bluetoothDevice = await navigator.bluetooth.requestDevice({
                     filters: [{ services: [ESC_POS_SERVICE] }],
-                    optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb'] // Fallback generic
+                    optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
                 });
 
                 bluetoothDevice.addEventListener('gattserverdisconnected', () => {
@@ -912,11 +1332,9 @@
 
                 const server = await bluetoothDevice.gatt.connect();
                 const service = await server.getPrimaryService(ESC_POS_SERVICE);
-                // Mencoba karakteristik umum untuk write
                 try {
                     bluetoothCharacteristic = await service.getCharacteristic(ESC_POS_WRITE);
                 } catch (e) {
-                    // Fallback jika UUID tidak cocok persis, kita coba ambil semua char
                     const characteristics = await service.getCharacteristics();
                     for (let c of characteristics) {
                         if (c.properties.write || c.properties.writeWithoutResponse) {
@@ -930,7 +1348,7 @@
                 showNotification('Bluetooth Terhubung!', 'success');
             } catch (error) {
                 console.error(error);
-                showNotification('Gagal koneksi bluetooth: ' + error, 'error');
+                showNotification('Gagal koneksi bluetooth', 'error');
             }
         }
 
@@ -954,18 +1372,11 @@
             const encoder = new TextEncoder();
             const lines = [];
             
-            // Header Store (Center Align)
-            lines.push(new Uint8Array([0x1B, 0x61, 0x01])); // Center align
-            
-            // Store Name
-            const nameData = encoder.encode(appSettings.storeName + '\n');
-            lines.push(nameData);
-            
-            // Date
-            const dateData = encoder.encode(new Date().toLocaleString('id-ID') + '\n');
-            lines.push(dateData);
-            
-            lines.push(new Uint8Array([0x1B, 0x61, 0x00])); // Left align
+            // Header
+            lines.push(new Uint8Array([0x1B, 0x61, 0x01])); // Center
+            lines.push(encoder.encode(appSettings.storeName + '\n'));
+            lines.push(encoder.encode(new Date().toLocaleString('id-ID') + '\n'));
+            lines.push(new Uint8Array([0x1B, 0x61, 0x00])); // Left
 
             // Items
             cart.forEach(item => {
@@ -975,13 +1386,13 @@
 
             // Total
             const total = getGrandTotal();
-            lines.push(new Uint8Array([0x1B, 0x45])); // Bold on
+            lines.push(new Uint8Array([0x1B, 0x45])); // Bold
             lines.push(encoder.encode('------------------------\n'));
             lines.push(encoder.encode(`TOTAL     ${formatRupiah(total).replace('Rp ', '')}\n`));
             lines.push(new Uint8Array([0x1B, 0x46, 0x00])); // Bold off
 
-            // Cut Paper (Feed n Cut)
-            lines.push(new Uint8Array([0x0A, 0x0A, 0x0A, 0x1D, 0x56, 0x00])); // 3 Lines feed + Cut
+            // Cut
+            lines.push(new Uint8Array([0x0A, 0x0A, 0x0A, 0x1D, 0x56, 0x00])); 
 
             try {
                 for (let line of lines) {
@@ -994,22 +1405,8 @@
         }
 
         function printSystem() {
-            // Print Biasa (Browser Print)
             window.print();
         }
-
-        // --- SETTINGS ---
-        function openSettings() {
-            // Simplified settings untuk single file
-            const newName = prompt('Nama Toko:', appSettings.storeName);
-            if(newName) {
-                appSettings.storeName = newName;
-                saveData();
-                showNotification('Pengaturan Disimpan');
-            }
-        }
-        
-        function updateSettingsUI() { /* Placeholder */ }
     </script>
 </body>
 </html>
