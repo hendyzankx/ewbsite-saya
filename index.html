@@ -3,2122 +3,1134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Kasir Scan Pro - Camera Fix</title>
-    
-    <!-- LIBRARY SCANNER (DI-EMBEDDED) -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" id="html5-qrcode-lib"></script>
-    
-    <script>
-        // FALLBACK SCANNER
-        window.Html5Qrcode = (function() {
-            function t() {
-                this._isScanning = !1, this._localMediaStream = null, this._element = null
-            }
-            return t.prototype.start = function(t, e, o, n) {
-                var i = this;
-                if (this._isScanning) return Promise.reject("Already scanning");
-                this._isScanning = !0;
-                var r = document.getElementById(this._elementId);
-                if (!r) return this._isScanning = !1, Promise.reject("Element not found");
-                return this._setupCamera(t, r, e).then(function(t) {
-                    i._localMediaStream = t, i._videoElement = t, r.appendChild(t), i._scanHandler = o, n && (i._errorHandler = n), i._startScanningLoop()
-                })
-            }, t.prototype.stop = function() {
-                this._isScanning = !1, this._localMediaStream && this._localMediaStream.getTracks().forEach(function(t) { t.stop() })
-            }, t.prototype._setupCamera = function(t, e, o) {
-                return navigator.mediaDevices.getUserMedia({ video: { facingMode: t, width: { ideal: 1280 }, height: { ideal: 720 } }).then(function(t) {
-                    var o = document.createElement("video");
-                    return o.srcObject = t, o.setAttribute("playsinline", !0), o.setAttribute("autoplay", !0), o
-                })
-            }, t.prototype._startScanningLoop = function() {
-                var t = this;
-                if (!this._isScanning) return;
-                if(!this._scanInterval) this._scanInterval = setInterval(function(){},1000);
-            }, t.prototype.getCapturedElement = function() {
-                return this._videoElement
-            }, t
-        })();
-    </script>
-
+    <meta name="theme-color" content="#4f46e5">
+    <title>Kasir Offline - Scan Barcode</title>
     <style>
-        /* --- RESET & BASIC --- */
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            min-height: 100vh;
-            padding: 10px;
-            color: #333;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f3f4f6;
+            color: #1f2937;
+            overflow-x: hidden;
+            padding-bottom: 80px;
         }
-
-        .container {
-            max-width: 480px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-            position: relative;
-            padding-bottom: 20px;
-            display: flex; flex-direction: column;
-        }
-
-        /* --- HEADER --- */
+        
+        /* Header */
         .header {
-            color: white; padding: 15px 20px;
-            display: flex; justify-content: space-between; align-items: center;
-            transition: background 0.3s ease;
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
-        .header.mode-kasir { background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%); }
-        .header.mode-stok { background: linear-gradient(135deg, #f12711 0%, #f5af19 100%); }
-
-        .header h1 { font-size: 1.2rem; font-weight: 700; }
-        .header p { font-size: 0.75rem; opacity: 0.9; }
-        .settings-btn {
-            background: rgba(255,255,255,0.2); border: none; color: white;
-            width: 36px; height: 36px; border-radius: 50%; cursor: pointer;
-            font-size: 1.1rem; transition: 0.2s; display: flex; align-items: center; justify-content: center;
-        }
-        .settings-btn:active { transform: scale(0.9); background: rgba(255,255,255,0.4); }
-
-        /* --- MODE SWITCH --- */
-        .mode-switch-container { padding: 15px 15px 0; }
-        .mode-switch {
-            display: flex; background: #f0f0f0;
-            border-radius: 12px; padding: 5px;
-        }
-        .mode-btn {
-            flex: 1; padding: 10px; border: none; border-radius: 10px;
-            font-size: 0.85rem; font-weight: 600; cursor: pointer;
-            background: transparent; color: #888; transition: all 0.3s;
-        }
-        .mode-btn.active { background: white; color: #4e54c8; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .mode-btn.active.stok-active { color: #f5af19; background: #fff8e1; }
-
-        /* --- SCANNER SECTION --- */
-        .scanner-wrapper { padding: 15px; background: #f8f9fa; text-align: center; border-bottom: 1px solid #eee; }
-        #reader-wrapper {
-            position: relative;
-            width: 260px; height: 260px;
-            margin: 0 auto 15px;
-            border-radius: 20px;
-            overflow: hidden;
-            border: 4px solid #ddd;
-            box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
-            background: #000;
-            transition: border-color 0.3s;
-        }
-        #reader {
-            width: 100% !important; height: 100% !important;
-            border: none !important; background: #000;
-        }
-        .scan-line {
-            position: absolute; top: 0; left: 0; width: 100%; height: 2px;
-            background: #e74c3c;
-            box-shadow: 0 0 4px #e74c3c;
-            animation: scanMove 2s infinite linear;
-            pointer-events: none; z-index: 10;
-            transition: background 0.3s, box-shadow: 0.3s;
-        }
-        .scan-line.stock-active { background: #f5af19; box-shadow: 0 0 4px #f5af19; }
-        @keyframes scanMove { 0% { top: 10px; opacity: 0; } 10% { opacity: 1; } 90% { opacity: 1; } 100% { top: 250px; opacity: 0; } }
-        .corner {
-            position: absolute; width: 40px; height: 40px;
-            border: 4px solid #4e54c8; z-index: 11;
-            pointer-events: none;
-            transition: border-color 0.3s;
-        }
-        .corner.stock-active { border-color: #f5af19; }
-        .tl { top: 0; left: 0; border-right: none; border-bottom: none; border-radius: 15px 0 0 0 0; }
-        .tr { top: 0; right: 0; border-left: none; border-bottom: none; border-radius: 0 15px 0 0 0; }
-        .bl { bottom: 0; left: 0; border-right: none; border-top: none; border-radius: 0 0 0 15px 0 0 0; }
-        .br { bottom: 0; right: 0; border-left: none; border-top: none; border-radius: 0 0 0 15px; }
         
-        .scanner-controls { display: flex; gap: 10px; justify-content: center; }
-        .scan-status-msg { font-size: 0.8rem; color: #666; margin-bottom: 5px; height: 1.2em; }
-        .scan-status-msg.error { color: #e74c3c; font-weight: bold; }
-        .scan-status-msg.success { color: #27ae60; font-weight: bold; }
-        .scan-status-msg.info { color: #4e54c8; }
-
-        /* --- INPUT MANUAL --- */
-        .manual-input-section { padding: 0 15px; background: white; margin-top: -10px; }
-        .input-group { display: flex; gap: 8px; }
-        .input-group input {
-            flex: 1; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px;
-            font-size: 0.95rem; outline: none; transition: 0.3s;
+        .header h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
         }
-        .input-group input:focus { border-color: #4e54c8; }
-        .mode-stok-active .input-group input:focus { border-color: #f5af19; }
-
-        /* --- STOCK MODE VISUAL --- */
-        .stock-mode-container {
-            display: none; padding: 20px; text-align: center; background: #fff8e1;
-            border-top: 2px dashed #f5af19; border-bottom: 2px dashed #f5af19;
-            animation: fadeIn 0.5s;
-        }
-        .stock-mode-container.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .stock-icon-large { font-size: 3rem; margin-bottom: 10px; display: block; }
-        .stock-title { font-weight: bold; font-size: 1.1rem; color: #d35400; margin-bottom: 5px; }
-        .stock-desc { font-size: 0.85rem; color: #e67e22; line-height: 1.4; }
-
-        /* --- CART --- */
-        .cart-section { padding: 15px; background: white; flex: 1; }
-        .cart-header {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 10px; border-bottom: 2px solid #f0f0f0; padding-bottom: 5px;
-        }
-        .cart-count { background: #4e54c8; color: white; padding: 2px 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-        .cart-items { max-height: 250px; overflow-y: auto; padding-right: 3px; }
-        .cart-item {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 8px; background: #f8f9fa; border-radius: 8px; margin-bottom: 6px; animation: slideIn 0.2s ease;
-        }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        .cart-item-info { flex: 1; min-width: 0; padding-right: 5px; }
-        .cart-item-name { font-weight: 600; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .cart-item-price { color: #4e54c8; font-weight: 700; font-size: 0.85rem; }
-        .qty-controls { display: flex; align-items: center; gap: 5px; }
-        .qty-btn {
-            width: 24px; height: 24px; border: none; border-radius: 5px;
-            background: #4e54c8; color: white; font-size: 0.9rem; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .qty-val { font-size: 0.9rem; font-weight: 600; min-width: 15px; text-align: center; }
-        .delete-btn {
-            background: #ffebee; color: #e74c3c; border: none;
-            width: 28px; height: 28px; border-radius: 6px;
-            cursor: pointer; margin-left: 5px; display: flex; align-items: center; justify-content: center;
-        }
-
-        /* --- TOTAL & PAYMENT --- */
-        .total-section {
-            padding: 15px; background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
-            color: white; border-radius: 20px 20px 0 0; margin-top: 10px; transition: background 0.3s;
-        }
-        .total-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.85rem; opacity: 0.9; }
-        .total-row.grand-total { font-size: 1.3rem; font-weight: 800; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3); opacity: 1; }
         
-        .payment-section { padding: 15px; background: white; }
-        .payment-input {
-            width: 100%; padding: 12px; border: 2px solid #e0e0e0; border-radius: 10px;
-            font-size: 1.1rem; text-align: right; margin-bottom: 10px; outline: none; font-weight: bold;
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+            font-size: 0.75rem;
+            opacity: 0.9;
         }
-        .payment-input:focus { border-color: #4e54c8; }
-        .quick-pay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-        .quick-pay-btn {
-            padding: 8px; border: 1px solid #4e54c8; border-radius: 8px;
-            background: white; color: #4e54c8; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+        
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(255,255,255,0.2);
+            padding: 2px 8px;
+            border-radius: 12px;
         }
-        .quick-pay-btn.exact { background: #4e54c8; color: white; border: none; grid-column: span 3; }
-        .change-display {
-            text-align: center; padding: 8px; background: #e8f5e9; border-radius: 8px; margin-top: 10px; font-weight: 700; color: #27ae60; display: none;
+        
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #34d399;
         }
-        .change-display.short { background: #ffebee; color: #e74c3c; }
-        .action-buttons { display: flex; gap: 10px; padding: 0 15px 20px; }
+        
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            position: sticky;
+            top: 60px;
+            z-index: 99;
+        }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .nav-tab.active {
+            color: #4f46e5;
+            border-bottom-color: #4f46e5;
+        }
+        
+        /* Sections */
+        .section {
+            display: none;
+            padding: 16px;
+            animation: fadeIn 0.3s;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .card-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Buttons */
         .btn {
-            flex: 1; padding: 12px; border: none; border-radius: 12px;
-            font-size: 0.95rem; font-weight: 700; cursor: pointer; transition: 0.2s;
-            display: flex; align-items: center; justify-content: center; gap: 5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
         }
-        .btn:active { transform: scale(0.98); }
-        .btn-danger { background: #e74c3c; color: white; }
-        .btn-success { background: #27ae60; color: white; }
-        .btn-print { background: #2980b9; color: white; }
-
-        /* --- MODALS --- */
+        
+        .btn-primary {
+            background: #4f46e5;
+            color: white;
+        }
+        
+        .btn-primary:active {
+            background: #4338ca;
+            transform: scale(0.98);
+        }
+        
+        .btn-success {
+            background: #059669;
+            color: white;
+        }
+        
+        .btn-success:active {
+            background: #047857;
+        }
+        
+        .btn-danger {
+            background: #dc2626;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            width: auto;
+        }
+        
+        /* Scanner */
+        .scanner-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+        
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.3);
+        }
+        
+        .scanner-frame {
+            width: 200px;
+            height: 150px;
+            border: 2px solid #4f46e5;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .scanner-frame::before,
+        .scanner-frame::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: #4f46e5;
+            border-style: solid;
+        }
+        
+        .scanner-frame::before {
+            top: -2px;
+            left: -2px;
+            border-width: 3px 0 0 3px;
+        }
+        
+        .scanner-frame::after {
+            bottom: -2px;
+            right: -2px;
+            border-width: 0 3px 3px 0;
+        }
+        
+        .scanner-laser {
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            right: 10%;
+            height: 2px;
+            background: #ef4444;
+            box-shadow: 0 0 4px #ef4444;
+            animation: scan 2s infinite;
+        }
+        
+        @keyframes scan {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+        
+        .scanner-hint {
+            color: white;
+            margin-top: 16px;
+            font-size: 0.875rem;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+        
+        /* Manual Input */
+        .input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .input-field {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .input-field:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        
+        /* Cart Items */
+        .cart-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 3px solid #4f46e5;
+        }
+        
+        .cart-item-info {
+            flex: 1;
+        }
+        
+        .cart-item-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+        
+        .cart-item-price {
+            color: #6b7280;
+            font-size: 0.75rem;
+        }
+        
+        .cart-item-qty {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        
+        .qty-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        
+        .qty-btn:active {
+            background: #f3f4f6;
+        }
+        
+        .cart-total {
+            background: #4f46e5;
+            color: white;
+            padding: 16px;
+            border-radius: 12px;
+            margin-top: 16px;
+            text-align: center;
+        }
+        
+        .cart-total-amount {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        /* Product List */
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        
+        .product-item:last-child {
+            border-bottom: none;
+        }
+        
+        .product-barcode {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            font-family: monospace;
+        }
+        
+        .product-actions {
+            display: flex;
+            gap: 4px;
+        }
+        
+        /* Modal */
         .modal-overlay {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;
-            padding: 20px; backdrop-filter: blur(4px);
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
         }
-        .modal-overlay.active { display: flex; }
-        .modal-content {
-            background: white; border-radius: 15px; padding: 20px;
-            width: 100%; max-width: 400px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            max-height: 85vh; overflow-y: auto;
+        
+        .modal-overlay.active {
+            display: flex;
         }
-        @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
-        .close-modal { background: none; border: none; font-size: 1.5rem; color: #999; cursor: pointer; }
-        .form-group { margin-bottom: 12px; }
-        .form-group label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: #666; font-weight: 600; }
-        .form-group input { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }
-        .form-group .input-hint { font-size: 0.7rem; color: #999; margin-top: 2px; }
-        .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-
-        /* --- SETTINGS UI --- */
-        .settings-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; margin-bottom: 15px; }
-        .settings-tab {
-            padding: 8px 2px; border: 1px solid #ddd; border-radius: 6px;
-            background: #f9f9f9; text-align: center; cursor: pointer; font-size: 0.75rem;
+        
+        .modal {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s;
         }
-        .settings-tab.active { background: #4e54c8; color: white; border-color: #4e54c8; }
-        .settings-content { display: none; }
-        .settings-content.active { display: block; }
-
-        /* STOCK LIST STYLES */
-        .stock-search {
-            width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; margin-bottom: 10px; outline: none; font-size: 0.9rem;
+        
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
         }
-        .stock-list { max-height: 400px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
-        .stock-item {
-            padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem;
+        
+        .modal-header {
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .stock-item:last-child { border-bottom: none; }
-        .stock-info { flex: 1; padding-right: 10px; }
-        .stock-name { font-weight: 700; display: block; }
-        .stock-code { color: #888; font-size: 0.75rem; }
-        .stock-price { font-weight: bold; color: #4e54c8; font-size: 0.8rem; }
-        .stock-actions { display: flex; gap: 5px; }
-        .icon-btn {
-            background: #f0f0f0; border: none; border-radius: 4px;
-            padding: 4px; cursor: pointer; color: #555;
+        
+        .modal-body {
+            padding: 16px;
         }
-        .icon-btn.edit:hover { background: #e3f2fd; color: #1565c0; }
-        .icon-btn.delete:hover { background: #ffebee; color: #e74c3c; }
-
-        /* REPORT STYLES */
-        .report-card {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: center;
+        
+        .form-group {
+            margin-bottom: 12px;
         }
-        .report-row-split {
-            display: flex; justify-content: space-between; align-items: center;
-            margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3);
+        
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #374151;
         }
-        .report-list { max-height: 300px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
-        .report-item { 
-            padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; word-break: break-word; 
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #6b7280;
         }
-        .report-item:last-child { border-bottom: none; }
-        .report-detail-items {
-            font-size: 0.8rem; color: #555; margin-top: 4px; padding-left: 10px; border-left: 3px solid #4e54c8;
+        
+        /* Transaction History */
+        .transaction-item {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
-        .report-item-profit { 
-            color: #27ae60; font-weight: 600; font-size: 0.75rem;
-            display: inline-block; margin-left: 5px;
+        
+        .transaction-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
         }
-        .report-item-profit.negative { color: #e74c3c; }
-
-        /* --- BLUETOOTH CONTROL --- */
-        .bluetooth-status {
-            font-size: 0.75rem; color: #666; display: flex; align-items: center; gap: 5px;
-            background: #f0f0f0; padding: 4px 8px; border-radius: 4px;
+        
+        .transaction-date {
+            font-size: 0.75rem;
+            color: #6b7280;
         }
-        .bluetooth-dot { width: 8px; height: 8px; border-radius: 50%; background: #ccc; }
-        .bluetooth-dot.connected { background: #27ae60; }
-
-        /* --- NOTIFICATION --- */
-        .notification {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: #333; color: white; padding: 10px 20px; border-radius: 25px;
-            font-size: 0.85rem; z-index: 2000; opacity: 0; pointer-events: none;
-            transition: 0.3s; box-shadow: 0 5px 15px rgba(0,0,0,0.2); width: max-content; max-width: 90%;
+        
+        .transaction-amount {
+            font-weight: 700;
+            color: #059669;
         }
-        .notification.show { opacity: 1; top: 30px; }
-
-        .hidden { display: none !important; }
-        @media print { body { background: white; } .container, .modal-overlay { box-shadow: none; margin: 0; padding: 0; }
+        
+        .transaction-items {
+            font-size: 0.875rem;
+            color: #4b5563;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 16px;
+            color: #9ca3af;
+        }
+        
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 8px;
+        }
+        
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1f2937;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            z-index: 1001;
+            opacity: 0;
+            transition: all 0.3s;
+            white-space: nowrap;
+        }
+        
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+        
+        /* Bottom Nav */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 100;
+        }
+        
+        .bottom-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 4px 12px;
+            color: #6b7280;
+            font-size: 0.625rem;
+            text-decoration: none;
+            border: none;
+            background: none;
+            cursor: pointer;
+        }
+        
+        .bottom-nav-item.active {
+            color: #4f46e5;
+        }
+        
+        .bottom-nav-icon {
+            font-size: 1.25rem;
+        }
+        
+        /* Hidden file input */
+        #fileInput {
+            display: none;
+        }
+        
+        /* Responsive */
+        @media (min-width: 640px) {
+            .container {
+                max-width: 640px;
+                margin: 0 auto;
+            }
+        }
     </style>
+<base target="_blank">
 </head>
 <body>
-    <div class="container" id="mainContainer">
+    <div class="container">
         <!-- Header -->
-        <div class="header mode-kasir" id="mainHeader">
-            <div>
-                <h1 id="headerTitle">Kasir Scan Pro</h1>
-                <p id="headerSubtitle">QR/Barcode & Stok</p>
-            </div>
-            <button class="settings-btn" onclick="openSettings()">⚙️</button>
-        </div>
-
-        <!-- Mode Switch -->
-        <div class="mode-switch-container">
-            <div class="mode-switch">
-                <button class="mode-btn active" id="modeJual" onclick="switchMode('jual')">🛍️ Kasir</button>
-                <button class="mode-btn" id="modeStok" onclick="switchMode('stok')">📦 Stok Baru</button>
+        <div class="header">
+            <h1>📱 Kasir Offline</h1>
+            <div class="header-info">
+                <span class="status-badge">
+                    <span class="status-dot"></span>
+                    <span id="connectionStatus">Offline Mode</span>
+                </span>
+                <span id="totalProducts">0 Produk</span>
             </div>
         </div>
 
-        <!-- Scanner Section -->
-        <div class="scanner-wrapper">
-            <div class="scan-status-msg info" id="scanStatusMsg">Kamera non-aktif</div>
-            
-            <div id="reader-wrapper">
-                <div id="reader"></div>
-                <div class="scan-line hidden" id="scanLine"></div>
-                <div class="corner tl" id="cornerTL"></div>
-                <div class="corner tr" id="cornerTR"></div>
-                <div class="corner bl" id="cornerBL"></div>
-                <div class="corner br" id="cornerBR"></div>
-            </div>
-            
-            <div class="scanner-controls">
-                <button class="btn btn-primary" id="startBtn" onclick="startScanner()" style="background:#4e54c8; color:white; padding:8px 20px; border-radius:20px;">📷 Mulai Scan</button>
-                <button class="btn btn-danger hidden" id="stopBtn" onclick="stopScanner()" style="padding:8px 20px; border-radius:20px;">⏹ Stop</button>
-                
-                <!-- Tombol Perbaikan Kamera -->
-                <button class="btn" style="background:#f1c40f; color:white;" onclick="switchCamera()" title="Ganti Kamera">📷 Ganti Kamera</button>
-            </div>
+        <!-- Navigation -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('scan')">🛒 Kasir</button>
+            <button class="nav-tab" onclick="switchTab('products')">📦 Produk</button>
+            <button class="nav-tab" onclick="switchTab('history')">📋 Riwayat</button>
         </div>
 
-        <!-- Stock Mode Visual Container -->
-        <div class="stock-mode-container" id="stockModeContainer">
-            <div class="stock-icon-large">📦</div>
-            <div class="stock-title">Mode Inventaris</div>
-            <div class="stock-desc">Scan atau ketik kode barcode untuk menambah barang baru.</div>
-        </div>
-
-        <!-- Manual Input -->
-        <div class="manual-input-section">
-            <div class="input-group">
-                <input type="text" id="manualCode" placeholder="Kode Barcode / Nama..." onkeypress="handleManualInput(event)" autocomplete="off">
-                <button class="btn" id="manualCheckBtn" onclick="handleManualAdd()" style="background:#4e54c8; color:white; width:60px;">Cek</button>
-            </div>
-        </div>
-
-        <!-- Cart Section -->
-        <div class="cart-section" id="cartSection">
-            <div class="cart-header">
-                <h3>Keranjang</h3>
-                <span class="cart-count" id="cartCount">0 item</span>
-            </div>
-            <div class="cart-items" id="cartItems">
-                <div style="text-align:center; padding:20px; color:#ccc;">
-                    <p style="font-size:0.8rem; margin-top:5px;">Keranjang kosong</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Total & Payment -->
-        <div class="total-section" id="totalSection">
-            <div class="total-row">
-                <span>Subtotal</span>
-                <span id="subtotal">Rp 0</span>
-            </div>
-            <div class="total-row">
-                <span>Pajak (<span id="taxRateDisplay">10</span>%)</span>
-                <span id="tax">Rp 0</span>
-            </div>
-            <div class="total-row grand-total">
-                <span>TOTAL</span>
-                <span id="grandTotal">Rp 0</span>
-            </div>
-        </div>
-
-        <div class="payment-section" id="paymentSection">
-            <input type="number" id="paymentAmount" class="payment-input" placeholder="Uang Diterima (Rp)" oninput="calculateChange()">
-            <div class="quick-pay-grid">
-                <button class="quick-pay-btn" onclick="quickPay(10000)">10rb</button>
-                <button class="quick-pay-btn" onclick="quickPay(20000)">20rb</button>
-                <button class="quick-pay-btn" onclick="quickPay(50000)">50rb</button>
-                <button class="quick-pay-btn" onclick="quickPay(100000)">100rb</button>
-                <button class="quick-pay-btn exact" id="exactBtn" onclick="quickPayExact()">💰 Uang Pas</button>
-            </div>
-            <div class="change-display" id="changeDisplay">
-                Kembalian: <span id="changeAmount">Rp 0</span>
-            </div>
-        </div>
-
-        <div class="action-buttons" id="actionButtons">
-            <button class="btn btn-danger" onclick="clearCart()">Batal</button>
-            <button class="btn btn-success" onclick="processPayment()">Bayar ✅</button>
-        </div>
-    </div>
-
-    <!-- Modal: Product Not Found (Jual Mode) -->
-    <div class="modal-overlay" id="productModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>📦 Produk Tidak Ditemukan</h3>
-                <button class="close-modal" onclick="closeModal('productModal')">&times;</button>
-            </div>
-            <p style="margin-bottom:15px; font-size:0.9rem; color:#666;">
-                Kode: <strong id="modalCode"></strong><br>
-                Produk ini belum ada. Ingin menambahkannya sekarang?
-            </p>
-            <div class="form-group">
-                <label>Nama Produk</label>
-                <input type="text" id="productName" placeholder="Contoh: Kopi Kapal Api">
-            </div>
-            <div class="form-group">
-                <label>Harga Jual (Rp)</label>
-                <input type="number" id="productPrice" placeholder="0">
-            </div>
-            <div class="form-group">
-                <label>Harga Beli / Modal (Rp)</label>
-                <input type="number" id="productCost" placeholder="0 (Opsional)">
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-danger" style="flex:1" onclick="closeModal('productModal')">Batal</button>
-                <button class="btn btn-success" style="flex:1" onclick="saveProductFromModal()">Simpan</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Add Product (Stok Mode) -->
-    <div class="modal-overlay" id="addProductModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>➕ Tambah Barang Baru</h3>
-                <button class="close-modal" onclick="closeModal('addProductModal')">&times;</button>
-            </div>
-            <p style="margin-bottom:15px; font-size:0.9rem; color:#666;">
-                Barcode Terdeteksi: <strong id="addModalCode"></strong>
-            </p>
-            <div class="form-group">
-                <label>Nama Barang</label>
-                <input type="text" id="addProductName">
-            </div>
-            <div class="form-group">
-                <label>Harga Jual (Rp)</label>
-                <input type="number" id="addProductPrice">
-            </div>
-            <div class="form-group">
-                <label>Harga Beli / Modal (Rp)</label>
-                <input type="number" id="addProductCost" placeholder="0">
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-danger" style="flex:1" onclick="closeModal('addProductModal')">Batal</button>
-                <button class="btn btn-success" style="flex:1" onclick="saveNewProduct()">💾 Simpan</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Edit Stock (Settings) -->
-    <div class="modal-overlay" id="editStockModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>✏️ Edit Barang</h3>
-                <button class="close-modal" onclick="closeModal('editStockModal')">&times;</button>
-            </div>
-            <input type="hidden" id="editCode">
-            <div class="form-group">
-                <label>Nama Barang</label>
-                <input type="text" id="editName">
-            </div>
-            <div class="form-group">
-                <label>Harga Jual (Rp)</label>
-                <input type="number" id="editPrice">
-            </div>
-            <div class="form-group">
-                <label>Harga Beli / Modal (Rp)</label>
-                <input type="number" id="editCost">
-            </div>
-            <div class="modal-actions">
-                <button class="btn btn-danger" style="flex:1" onclick="closeModal('editStockModal')">Batal</button>
-                <button class="btn btn-success" style="flex:1" onclick="saveEditStock()">Simpan Perubahan</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Settings & Reports (FULL UI) -->
-    <div class="modal-overlay" id="settingsModal">
-        <div class="modal-content" style="max-height:85vh; overflow-y:auto;">
-            <div class="modal-header">
-                <h3>⚙️ Pengaturan</h3>
-                <button class="close-modal" onclick="closeModal('settingsModal')">&times;</button>
-            </div>
-            
-            <!-- 4 Tabs -->
-            <div class="settings-tabs">
-                <div class="settings-tab active" onclick="switchSettingsTab('general', this)">Toko</div>
-                <div class="settings-tab" onclick="switchSettingsTab('stock', this)">Stok</div>
-                <div class="settings-tab" onclick="switchSettingsTab('reports', this)">Laporan</div>
-                <div class="settings-tab" onclick="switchSettingsTab('backup', this)">Data</div>
-            </div>
-
-            <!-- Tab 1: General Settings -->
-            <div id="tab-general" class="settings-content active">
-                <div class="form-group">
-                    <label>Nama Toko</label>
-                    <input type="text" id="settingStoreName" value="TOKO MAJU JAYA">
-                </div>
-                <div class="form-group">
-                    <label>Alamat</label>
-                    <input type="text" id="settingStoreAddress" value="Jl. Merdeka No. 1">
-                </div>
-                <div class="form-group">
-                    <label>Pajak PPN (%)</label>
-                    <input type="number" id="settingTaxRate" value="10">
-                </div>
-                <div style="margin-top:20px; padding-top:15px; border-top:1px dashed #ccc;">
-                    <button class="btn btn-danger" style="width:100%" onclick="resetFactory()">⚠️ Reset Pabrik</button>
-                </div>
-            </div>
-
-            <!-- Tab 2: Stock Management -->
-            <div id="tab-stock" class="settings-content">
-                <input type="text" id="stockSearch" class="stock-search" placeholder="Cari nama barang..." oninput="renderStockList()">
-                <div style="text-align:right; margin-bottom:5px; font-size:0.75rem; color:#666;" id="stockCountDisplay">0 Barang</div>
-                <div class="stock-list" id="stockListContainer">
-                    <!-- List populated by JS -->
-                </div>
-            </div>
-
-            <!-- Tab 3: Reports -->
-            <div id="tab-reports" class="settings-content">
-                <div class="report-card">
-                    <div style="font-size:0.8rem; opacity:0.9">Omset Bulan Ini</div>
-                    <div style="font-size:1.5rem; font-weight:bold" id="monthlyReportTotal">Rp 0</div>
-                    <div style="font-size:0.75rem;" id="monthlyReportCount">0 Transaksi</div>
-                    <div class="report-row-split">
-                        <div>
-                            <div style="font-size:0.7rem; opacity:0.8">Total Laba Bersih</div>
-                            <div style="font-weight:bold; font-size:1.2rem;" id="monthlyReportProfit">Rp 0</div>
+        <!-- Scan/Kasir Section -->
+        <div id="scanSection" class="section active">
+            <!-- Scanner -->
+            <div class="card">
+                <div class="card-title">📷 Scan Barcode</div>
+                <div class="scanner-container">
+                    <video id="video" autoplay playsinline></video>
+                    <div class="scanner-overlay" id="scannerOverlay">
+                        <div class="scanner-frame">
+                            <div class="scanner-laser"></div>
                         </div>
-                        <div style="text-align:right;">
-                            <div style="font-size:0.7rem; opacity:0.8">Margin Rata-rata</div>
-                            <div style="font-weight:bold;" id="monthlyReportMargin">0%</div>
-                        </div>
+                        <div class="scanner-hint">Arahkan barcode ke frame</div>
                     </div>
                 </div>
-                <div style="font-size:0.75rem; color:#888; margin-bottom:5px;">Riwayat Transaksi Bulan Ini:</div>
-                <div class="report-list" id="reportListContainer">
-                    <div style="padding:15px; text-align:center; color:#999;">Belum ada data.</div>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-primary" onclick="toggleScanner()">
+                        <span id="scannerBtnText">🔴 Mulai Scan</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('fileInput').click()">
+                        📁 File
+                    </button>
+                </div>
+                <input type="file" id="fileInput" accept="image/*" onchange="handleFileSelect(event)">
+            </div>
+
+            <!-- Manual Input -->
+            <div class="card">
+                <div class="card-title">⌨️ Input Manual</div>
+                <div class="input-group">
+                    <input type="text" class="input-field" id="manualBarcode" placeholder="Masukkan barcode..." onkeypress="if(event.key==='Enter')addByBarcode()">
+                    <button class="btn btn-primary btn-sm" onclick="addByBarcode()">Tambah</button>
                 </div>
             </div>
 
-            <!-- Tab 4: Backup -->
-            <div id="tab-backup" class="settings-content">
-                <button class="btn" style="width:100%; margin-bottom:8px; border: 1px solid #4e54c8; background:white; color:#4e54c8;" onclick="exportData()">📥 Download Backup</button>
-                <input type="file" id="importFile" style="display:none" accept=".json" onchange="importData(event)">
-                <button class="btn" style="width:100%; margin-bottom:8px; border: 1px solid #4e54c8; background:white; color:#4e54c8;" onclick="document.getElementById('importFile').click()">📤 Upload</button>
-                <button class="btn" style="width:100%; border: 1px solid #4e54c8; background:white; color:#4e54c8;" onclick="exportCSV()">📊 CSV</button>
-            </div>
-
-            <div class="modal-actions" id="settingsFooter">
-                <button class="btn" style="flex:1; background:#eee; color:#333;" onclick="closeModal('settingsModal')">Tutup</button>
-                <button class="btn" style="flex:1; background:#4e54c8; color:white;" onclick="saveSettings()">Simpan</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Receipt & Bluetooth -->
-    <div class="modal-overlay" id="receiptModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>📄 Struk Transaksi</h3>
-                <button class="close-modal" onclick="closeReceipt()">&times;</button>
-            </div>
-
-            <!-- Bluetooth Controls -->
-            <div style="background:#e3f2fd; padding:10px; border-radius:8px; margin-bottom:15px; border: 1px solid #bbdefb;">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                    <strong style="font-size:0.9rem;">Bluetooth Printer (ESC/POS)</strong>
-                    <div class="bluetooth-status"><div class="bluetooth-dot" id="btDot"></div> <span id="btStatusText">Terputus</span></div>
+            <!-- Cart -->
+            <div class="card" id="cartCard" style="display: none;">
+                <div class="card-title">🛍️ Keranjang</div>
+                <div id="cartItems"></div>
+                <div class="cart-total">
+                    <div style="font-size: 0.875rem; opacity: 0.9;">Total Belanja</div>
+                    <div class="cart-total-amount" id="cartTotal">Rp 0</div>
                 </div>
-                <button class="btn btn-print" style="width:100%; font-size:0.85rem;" onclick="connectBluetooth()">
-                    🔗 Sambungkan
+                <button class="btn btn-success" onclick="checkout()" style="margin-top: 12px;">
+                    💰 Bayar & Cetak Struk
                 </button>
-                <div style="font-size:0.7rem; color:#666;">
-                    *Aplikasi Thermal Printer 58mm/80mm.
+                <button class="btn btn-danger" onclick="clearCart()" style="margin-top: 8px;">
+                    🗑️ Kosongkan
+                </button>
+            </div>
+
+            <div class="empty-state" id="emptyCart">
+                <div class="empty-icon">🛒</div>
+                <div>Keranjang masih kosong</div>
+                <div style="font-size: 0.875rem; margin-top: 4px;">Scan barcode untuk mulai</div>
+            </div>
+        </div>
+
+        <!-- Products Section -->
+        <div id="productsSection" class="section">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div class="card-title" style="margin: 0;">📦 Daftar Produk</div>
+                    <button class="btn btn-primary btn-sm" onclick="openProductModal()">+ Tambah</button>
                 </div>
+                <div class="input-group">
+                    <input type="text" class="input-field" id="searchProduct" placeholder="Cari produk..." oninput="renderProducts()">
+                </div>
+                <div id="productList"></div>
             </div>
+        </div>
 
-            <!-- Receipt Preview -->
-            <div style="background:#fff; border:1px solid #eee; padding:15px; font-family:'Courier New', monospace; font-size:0.8rem; margin-bottom:15px;">
-                <div style="text-align:center; font-weight:bold; border-bottom:1px dashed #000; padding-bottom:5px; margin-bottom:5px;" id="rStoreNamePreview">TOKO MAJU JAYA</div>
-                <div style="text-align:center; font-size:0.7rem;" id="rDatePreview">-</div>
-                <div id="receiptItemsPreview"></div>
-                <div style="border-top:1px dashed #000; padding-top:5px; margin-top:5px; font-weight:bold;" id="rTotalPreview">TOTAL: Rp 0</div>
-            </div>
-
-            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
-                <button class="btn" style="background:#4e54c8; color:white;" onclick="printBluetooth()">🖨 Print BT</button>
-                <button class="btn" style="background:#ccc; color:#333;" onclick="printSystem()">📄 Print Biasa</button>
+        <!-- History Section -->
+        <div id="historySection" class="section">
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <div class="card-title" style="margin: 0;">📋 Riwayat Transaksi</div>
+                    <button class="btn btn-danger btn-sm" onclick="clearHistory()">Hapus Semua</button>
+                </div>
+                <div id="transactionList"></div>
             </div>
         </div>
     </div>
 
-    <!-- Notification -->
-    <div id="notification" class="notification">Pesan</div>
+    <!-- Product Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3 id="modalTitle">Tambah Produk</h3>
+                <button class="close-btn" onclick="closeProductModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Barcode</label>
+                    <input type="text" class="input-field" id="prodBarcode" placeholder="Scan atau masukkan barcode">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nama Produk</label>
+                    <input type="text" class="input-field" id="prodName" placeholder="Nama produk">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Harga (Rp)</label>
+                    <input type="number" class="input-field" id="prodPrice" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Stok</label>
+                    <input type="number" class="input-field" id="prodStock" placeholder="0" value="0">
+                </div>
+                <button class="btn btn-primary" onclick="saveProduct()" style="margin-top: 8px;">Simpan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div class="modal-overlay" id="receiptModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>🧾 Struk Belanja</h3>
+                <button class="close-btn" onclick="closeReceiptModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="receiptContent" style="font-family: monospace; font-size: 0.875rem;">
+            </div>
+            <div style="padding: 0 16px 16px;">
+                <button class="btn btn-primary" onclick="shareReceipt()">📤 Bagikan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
 
     <script>
-        // --- DATA & STATE ---
-        let productDatabase = {};
-        let salesHistory = [];
+        // State Management
+        let products = JSON.parse(localStorage.getItem('kasir_products') || '[]');
         let cart = [];
-        let appSettings = { storeName: 'TOKO MAJU JAYA', storeAddress: 'Jl. Merdeka No. 1', taxRate: 10 };
-        
-        // SCANNER VARIABLES
-        let html5QrCode = null;
+        let transactions = JSON.parse(localStorage.getItem('kasir_transactions') || '[]');
         let isScanning = false;
-        let currentMode = 'jual';
-        let tempCode = '';
-        let lastScanTime = 0;
+        let videoStream = null;
+        let barcodeDetector = null;
+        let editingProduct = null;
 
-        // Bluetooth Variables
-        let bluetoothDevice = null;
-        let bluetoothCharacteristic = null;
-        const ESC_POS_SERVICE = '000018f0-0000-1000-8000-00805f9b34fb';
-        const ESC_POS_WRITE = '00002af1-0000-1000-8000-00805f9b34fb';
-
-        // --- AUDIO SYSTEM (SOUND: TUNG) ---
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
-
-        function playBeep() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            updateStats();
+            renderProducts();
+            renderHistory();
             
-            const t = audioCtx.currentTime;
-            const createOsc = (startTime, freq, duration) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                // "Tung" -> 400Hz
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(freq, startTime);
-                gain.gain.setValueAtTime(0.1, startTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(startTime);
-                osc.stop(startTime + duration);
-            };
-            // Durasi pendek (150ms)
-            createOsc(t, 400, 0.15);
-        }
-
-        // --- INIT & LOCAL STORAGE ---
-        window.onload = function() {
-            loadData();
-            renderCart();
-            updateSettingsUI();
-        };
-
-        function loadData() {
-            const p = localStorage.getItem('kasir_products');
-            const s = localStorage.getItem('kasir_settings');
-            const h = localStorage.getItem('kasir_history');
-
-            if (p) productDatabase = JSON.parse(p);
-            else {
-                productDatabase = {
-                    '8998866200313': { name: 'Indomie Goreng', price: 3500, cost: 3000 },
-                    '8996001600269': { name: 'Aqua 600ml', price: 4000, cost: 3000 },
-                    '8999999526452': { name: 'Teh Pucuk 350ml', price: 4000, cost: 3500 }
-                };
-            }
-            if (s) appSettings = JSON.parse(s);
-            if (h) salesHistory = JSON.parse(h);
-        }
-
-        function saveData() {
-            localStorage.setItem('kasir_products', JSON.stringify(productDatabase));
-            localStorage.setItem('kasir_settings', JSON.stringify(appSettings));
-            localStorage.setItem('kasir_history', JSON.stringify(salesHistory));
-        }
-
-        function formatRupiah(num) {
-            return 'Rp ' + Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        }
-
-        function showNotification(msg, type = 'normal') {
-            const el = document.getElementById('notification');
-            el.textContent = msg;
-            el.style.background = type === 'error' ? '#e74c3c' : type === 'success' ? '#27ae60' : '#333';
-            el.classList.add('show');
-            setTimeout(() => el.classList.remove('show'), 2500);
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
-        function openModal(id) {
-            document.getElementById(id).classList.add('active');
-        }
-
-        // --- MODE SWITCHING ---
-        function switchMode(mode) {
-            currentMode = mode;
-            const btnJual = document.getElementById('modeJual');
-            const btnStok = document.getElementById('modeStok');
-            btnJual.classList.toggle('active', mode === 'jual');
-            btnStok.classList.toggle('active', mode === 'stok');
-            btnStok.classList.toggle('stok-active', mode === 'stok');
-
-            const header = document.getElementById('mainHeader');
-            const hTitle = document.getElementById('headerTitle');
-            const hSub = document.getElementById('headerSubtitle');
-            
-            if (mode === 'stok') {
-                header.classList.remove('mode-kasir'); header.classList.add('mode-stok');
-                hTitle.textContent = "Mode Inventaris"; hSub.textContent = "Tambah Stok Barang";
-                document.body.style.background = "linear-gradient(135deg, #fff1eb 0%, #ace0f9 100%)";
-                document.getElementById('scanLine').classList.add('stock-active');
-                ['cornerTL','cornerTR','cornerBL','cornerBR'].forEach(id => document.getElementById(id).classList.add('stock-active'));
-                document.getElementById('stockModeContainer').classList.add('active');
-                document.getElementById('cartSection').classList.add('hidden');
-                document.getElementById('totalSection').classList.add('hidden');
-                document.getElementById('paymentSection').classList.add('hidden');
-                document.getElementById('actionButtons').classList.add('hidden');
-                document.getElementById('manualCheckBtn').textContent = "Tambah";
-                showNotification('📦 Mode Stok Aktif');
+            // Check BarcodeDetector support
+            if ('BarcodeDetector' in window) {
+                barcodeDetector = new BarcodeDetector({ formats: ['ean_13', 'ean_8', 'code_128', 'code_39', 'qr_code'] });
             } else {
-                header.classList.remove('mode-stok'); header.classList.add('mode-kasir');
-                hTitle.textContent = "Kasir Scan Pro"; hSub.textContent = "QR/Barcode & Stok";
-                document.body.style.background = "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)";
-                document.getElementById('scanLine').classList.remove('stock-active');
-                ['cornerTL','cornerTR','cornerBL','cornerBR'].forEach(id => document.getElementById(id).classList.remove('stock-active'));
-                document.getElementById('stockModeContainer').classList.remove('active');
-                document.getElementById('cartSection').classList.remove('hidden');
-                document.getElementById('totalSection').classList.remove('hidden');
-                document.getElementById('paymentSection').classList.remove('hidden');
-                document.getElementById('actionButtons').classList.remove('hidden');
-                document.getElementById('manualCheckBtn').textContent = "Cek";
-                showNotification('🛍️ Mode Kasir Aktif');
+                showToast('BarcodeDetector tidak didukung, gunakan input manual');
             }
+        });
+
+        // Tab Switching
+        function switchTab(tab) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
             
-            const scanMsg = document.getElementById('scanStatusMsg');
-            scanMsg.textContent = mode === 'stok' ? "Siap scan barang baru..." : "Siap scan kasir...";
+            document.getElementById(tab + 'Section').classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tab === 'scan') {
+                renderCart();
+            } else if (tab === 'products') {
+                renderProducts();
+            } else if (tab === 'history') {
+                renderHistory();
+            }
         }
 
-        // --- SCANNER LOGIC ---
+        // Scanner Functions
+        async function toggleScanner() {
+            if (isScanning) {
+                stopScanner();
+            } else {
+                await startScanner();
+            }
+        }
+
         async function startScanner() {
-            if (isScanning) return;
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { facingMode: 'environment' } 
+                });
+                const video = document.getElementById('video');
+                video.srcObject = videoStream;
+                isScanning = true;
+                document.getElementById('scannerBtnText').textContent = '🛑 Stop Scan';
+                document.getElementById('scannerOverlay').style.display = 'flex';
+                scanLoop();
+            } catch (err) {
+                showToast('Gagal mengakses kamera: ' + err.message);
+            }
+        }
+
+        function stopScanner() {
+            if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+            isScanning = false;
+            document.getElementById('scannerBtnText').textContent = '🔴 Mulai Scan';
+            document.getElementById('scannerOverlay').style.display = 'none';
+        }
+
+        async function scanLoop() {
+            if (!isScanning) return;
             
-            // 1. Cek apakah kamera tersedia. Jika tidak, tampilkan tombol "Coba Kamera Depan" (dipilih kamera manual)
-            if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices || !navigator.mediaDevices.getUserMedia) {
-                showNotification('Tidak ada kamera. Cek "Coba Kamera Depan".', 'error');
+            const video = document.getElementById('video');
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                try {
+                    const barcodes = await barcodeDetector.detect(video);
+                    if (barcodes.length > 0) {
+                        const barcode = barcodes[0].rawValue;
+                        stopScanner();
+                        addToCartByBarcode(barcode);
+                        return;
+                    }
+                } catch (e) {
+                    // Silent fail
+                }
+            }
+            requestAnimationFrame(scanLoop);
+        }
+
+        // File Upload Scan
+        async function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            try {
+                const bitmap = await createImageBitmap(file);
+                const barcodes = await barcodeDetector.detect(bitmap);
+                if (barcodes.length > 0) {
+                    addToCartByBarcode(barcodes[0].rawValue);
+                } else {
+                    showToast('Tidak ada barcode terdeteksi');
+                }
+            } catch (err) {
+                showToast('Gagal memproses gambar');
+            }
+        }
+
+        // Cart Functions
+        function addToCartByBarcode(barcode) {
+            const product = products.find(p => p.barcode === barcode);
+            if (!product) {
+                showToast('Produk tidak ditemukan! Tambahkan ke daftar produk.');
+                openProductModal(barcode);
                 return;
             }
+            
+            const existingItem = cart.find(item => item.barcode === barcode);
+            if (existingItem) {
+                existingItem.qty++;
+            } else {
+                cart.push({ ...product, qty: 1 });
+            }
+            
+            renderCart();
+            showToast(`✅ ${product.name} ditambahkan`);
+        }
 
-            // 2. Lakukan try-catch kamera
-            try {
-                const Html5QrcodeConstructor = window.Html5Qrcode || window.html5Qrcode;
-                if (!Html5QrcodeConstructor) {
-                    showNotification('Library scanner tidak ditemukan.', 'error');
+        function addByBarcode() {
+            const barcode = document.getElementById('manualBarcode').value.trim();
+            if (!barcode) return;
+            addToCartByBarcode(barcode);
+            document.getElementById('manualBarcode').value = '';
+        }
+
+        function updateQty(index, delta) {
+            cart[index].qty += delta;
+            if (cart[index].qty <= 0) {
+                cart.splice(index, 1);
+            }
+            renderCart();
+        }
+
+        function clearCart() {
+            if (cart.length === 0) return;
+            if (confirm('Yakin ingin mengosongkan keranjang?')) {
+                cart = [];
+                renderCart();
+            }
+        }
+
+        function renderCart() {
+            const cartItems = document.getElementById('cartItems');
+            const cartCard = document.getElementById('cartCard');
+            const emptyCart = document.getElementById('emptyCart');
+            
+            if (cart.length === 0) {
+                cartCard.style.display = 'none';
+                emptyCart.style.display = 'block';
+                return;
+            }
+            
+            cartCard.style.display = 'block';
+            emptyCart.style.display = 'none';
+            
+            let total = 0;
+            cartItems.innerHTML = cart.map((item, index) => {
+                const subtotal = item.price * item.qty;
+                total += subtotal;
+                return `
+                    <div class="cart-item">
+                        <div class="cart-item-info">
+                            <div class="cart-item-name">${item.name}</div>
+                            <div class="cart-item-price">Rp ${formatRupiah(item.price)} x ${item.qty}</div>
+                            <div style="font-weight: 700; color: #4f46e5;">Rp ${formatRupiah(subtotal)}</div>
+                        </div>
+                        <div class="cart-item-qty">
+                            <button class="qty-btn" onclick="updateQty(${index}, -1)">−</button>
+                            <span style="font-weight: 700; min-width: 24px; text-align: center;">${item.qty}</span>
+                            <button class="qty-btn" onclick="updateQty(${index}, 1)">+</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            document.getElementById('cartTotal').textContent = 'Rp ' + formatRupiah(total);
+        }
+
+        function checkout() {
+            if (cart.length === 0) return;
+            
+            const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+            const transaction = {
+                id: Date.now(),
+                date: new Date().toLocaleString('id-ID'),
+                items: [...cart],
+                total: total
+            };
+            
+            transactions.unshift(transaction);
+            localStorage.setItem('kasir_transactions', JSON.stringify(transactions));
+            
+            // Update stock
+            cart.forEach(cartItem => {
+                const product = products.find(p => p.barcode === cartItem.barcode);
+                if (product && product.stock > 0) {
+                    product.stock -= cartItem.qty;
+                }
+            });
+            localStorage.setItem('kasir_products', JSON.stringify(products));
+            
+            showReceipt(transaction);
+            cart = [];
+            renderCart();
+            renderProducts();
+            renderHistory();
+            updateStats();
+        }
+
+        // Receipt
+        function showReceipt(transaction) {
+            const content = document.getElementById('receiptContent');
+            const items = transaction.items.map(item => 
+                `${item.name}\n${item.qty} x Rp ${formatRupiah(item.price)} = Rp ${formatRupiah(item.price * item.qty)}`
+            ).join('\n\n');
+            
+            content.innerHTML = `
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <div style="font-size: 1.125rem; font-weight: 700;">STRUK BELANJA</div>
+                    <div style="font-size: 0.75rem; color: #6b7280;">${transaction.date}</div>
+                    <div style="font-size: 0.75rem; color: #6b7280;">ID: ${transaction.id}</div>
+                </div>
+                <div style="border-top: 1px dashed #000; border-bottom: 1px dashed #000; padding: 12px 0; margin: 12px 0;">
+                    ${items}
+                </div>
+                <div style="text-align: right; font-size: 1.125rem; font-weight: 700;">
+                    TOTAL: Rp ${formatRupiah(transaction.total)}
+                </div>
+                <div style="text-align: center; margin-top: 16px; font-size: 0.75rem;">
+                    Terima kasih telah berbelanja!<br>
+                    Simpan struk ini sebagai bukti
+                </div>
+            `;
+            
+            document.getElementById('receiptModal').classList.add('active');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').classList.remove('active');
+        }
+
+        function shareReceipt() {
+            const receiptText = document.getElementById('receiptContent').innerText;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Struk Belanja',
+                    text: receiptText
+                });
+            } else {
+                navigator.clipboard.writeText(receiptText).then(() => {
+                    showToast('Struk disalin ke clipboard');
+                });
+            }
+        }
+
+        // Product Management
+        function openProductModal(barcode = '') {
+            editingProduct = null;
+            document.getElementById('modalTitle').textContent = 'Tambah Produk';
+            document.getElementById('prodBarcode').value = barcode;
+            document.getElementById('prodName').value = '';
+            document.getElementById('prodPrice').value = '';
+            document.getElementById('prodStock').value = '0';
+            document.getElementById('productModal').classList.add('active');
+        }
+
+        function editProduct(barcode) {
+            const product = products.find(p => p.barcode === barcode);
+            if (!product) return;
+            
+            editingProduct = product;
+            document.getElementById('modalTitle').textContent = 'Edit Produk';
+            document.getElementById('prodBarcode').value = product.barcode;
+            document.getElementById('prodName').value = product.name;
+            document.getElementById('prodPrice').value = product.price;
+            document.getElementById('prodStock').value = product.stock;
+            document.getElementById('productModal').classList.add('active');
+        }
+
+        function closeProductModal() {
+            document.getElementById('productModal').classList.remove('active');
+        }
+
+        function saveProduct() {
+            const barcode = document.getElementById('prodBarcode').value.trim();
+            const name = document.getElementById('prodName').value.trim();
+            const price = parseInt(document.getElementById('prodPrice').value) || 0;
+            const stock = parseInt(document.getElementById('prodStock').value) || 0;
+            
+            if (!barcode || !name || price <= 0) {
+                showToast('Lengkapi data produk!');
+                return;
+            }
+            
+            if (editingProduct) {
+                editingProduct.barcode = barcode;
+                editingProduct.name = name;
+                editingProduct.price = price;
+                editingProduct.stock = stock;
+            } else {
+                const existing = products.find(p => p.barcode === barcode);
+                if (existing) {
+                    showToast('Barcode sudah ada!');
                     return;
                 }
-
-                try {
-                    html5QrCode = new Html5Qrcode("reader");
-                    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-                    
-                    await html5QrCode.start(
-                        { facingMode: "environment" }, 
-                        config, 
-                        onScanSuccess, 
-                        (err) => { 
-                            // Jika error, tampilkan pesan error
-                            console.warn("Scanner Error:", err);
-                            document.getElementById('scanStatusMsg').textContent = "Gagal Scan: " + err.name;
-                            document.getElementById('scanStatusMsg').classList.add('error');
-                        } 
-                    );
-                    
-                    isScanning = true;
-                    document.getElementById('startBtn').classList.add('hidden');
-                    document.getElementById('stopBtn').classList.remove('hidden');
-                    document.getElementById('scanLine').classList.remove('hidden');
-                    
-                    const scanMsg = document.getElementById('scanStatusMsg');
-                    scanMsg.textContent = "📷 Scanning...";
-                    scanMsg.classList.add('info');
-                    document.getElementById('scanStatusMsg').classList.remove('error');
-                    showNotification('📷 Kamera Aktif', 'success');
-                } catch (err) {
-                    console.error(err);
-                    let errorMsg = "Gagal Scan";
-                    if (err.name === 'NotAllowedError') errorMsg = "Izin Kamera ditolak.";
-                    else if (err.name === 'NotFoundError') errorMsg = "Kamera tidak ditemukan.";
-                    else errorMsg = "Browser mendukung kamera.";
-                    showNotification(errorMsg, 'error');
-                    
-                    // Tampilkan tombol "Ganti Kamera" jika user masih mau mencoba kamera lain
-                    const stopBtn = document.getElementById('stopBtn');
-                    stopBtn.classList.remove('hidden');
-                }
-        }
-
-        async function stopScanner() {
-            if (!isScanning || !html5QrCode) return;
-            try {
-                await html5QrCode.stop();
-                isScanning = false;
-                document.getElementById('startBtn').classList.remove('hidden');
-                document.getElementById('stopBtn').classList.add('hidden');
-                document.getElementById('scanLine').classList.add('hidden');
-                
-                document.getElementById('scanStatusMsg').textContent = "Kamera non-aktif";
-                document.getElementById('scanStatusMsg').classList.remove('active');
-                document.getElementById('scanStatusMsg').classList.remove('error');
-                
-                document.getElementById('reader').innerHTML = "";
-            } catch (err) {
-                console.error(err);
+                products.push({ barcode, name, price, stock });
             }
-        }
-
-        function onScanSuccess(decodedText, decodedResult) {
-            const now = Date.now();
-            if (now - lastScanTime < 500) return;
-            lastScanTime = now;
-            decodedText = decodedText.trim();
-            playBeep();
             
-            const statusMsg = document.getElementById('scanStatusMsg');
-            statusMsg.textContent = "✅ Terbaca: " + decodedText;
-            statusMsg.classList.remove('info');
-            statusMsg.classList.add('success');
+            localStorage.setItem('kasir_products', JSON.stringify(products));
+            closeProductModal();
+            renderProducts();
+            updateStats();
+            showToast('Produk disimpan!');
+        }
+
+        function deleteProduct(barcode) {
+            if (!confirm('Yakin hapus produk ini?')) return;
+            products = products.filter(p => p.barcode !== barcode);
+            localStorage.setItem('kasir_products', JSON.stringify(products));
+            renderProducts();
+            updateStats();
+            showToast('Produk dihapus');
+        }
+
+        function renderProducts() {
+            const search = document.getElementById('searchProduct').value.toLowerCase();
+            const filtered = products.filter(p => 
+                p.name.toLowerCase().includes(search) || 
+                p.barcode.includes(search)
+            );
             
-            setTimeout(() => { 
-                updateScanStatusText(); 
-                statusMsg.classList.remove('success');
-            }, 500);
-
-            if (currentMode === 'stok') handleAddProductScan(decodedText);
-            else handleJualScan(decodedText);
-        }
-
-        function updateScanStatusText() {
-            const scanMsg = document.getElementById('scanStatusMsg');
-            if (isScanning) {
-                scanMsg.textContent = "🔍 Sedang mencari sinyal...";
-                scanMsg.classList.remove('info');
-                scanMsg.classList.remove('success');
-                scanMsg.classList.remove('error');
-            } else {
-                scanMsg.textContent = "Kamera non-aktif";
-            }
-        }
-
-        // --- SALES LOGIC ---
-        function handleJualScan(code) {
-            if (productDatabase[code]) addToCart(code);
-            else openAddProductModal(code, 'jual');
-        }
-
-        function processCode(code) {
-            if (productDatabase[code]) addToCart(code);
-            else openAddProductModal(code, 'jual');
-        }
-
-        function addToCart(code) {
-            const product = productDatabase[code];
-            const existing = cart.find(i => i.code === code);
-            const itemCost = product.cost || 0;
-            if (existing) existing.qty++;
-            else cart.push({ code: code, name: product.name, price: product.price, qty: 1, cost: itemCost });
-            renderCart();
-        }
-
-        function handleManualInput(e) {
-            if (e.key === 'Enter') handleManualAdd();
-        }
-
-        function handleManualAdd() {
-            const val = document.getElementById('manualCode').value.trim();
-            if (!val) return;
-            if (currentMode === 'stok') handleAddProductScan(val);
-            else processCode(val);
-            document.getElementById('manualCode').value = '';
-        }
-
-        // --- STOCK LOGIC ---
-        function handleAddProductScan(code) {
-            if (productDatabase[code]) {
-                showNotification('Barang sudah ada! Gunakan menu Stok untuk edit.', 'error');
-            } else {
-                openAddProductModal(code, 'stok');
-            }
-        }
-
-        function openAddProductModal(code, source) {
-            tempCode = code;
-            if (source === 'jual') {
-                document.getElementById('modalCode').textContent = code;
-                document.getElementById('productName').value = '';
-                document.getElementById('productPrice').value = '';
-                document.getElementById('productCost').value = '';
-                openModal('productModal');
-                setTimeout(() => document.getElementById('productName').focus(), 100);
-            } else {
-                document.getElementById('addModalCode').textContent = code;
-                document.getElementById('addProductName').value = '';
-                document.getElementById('addProductPrice').value = '';
-                document.getElementById('addProductCost').value = '';
-                openModal('addProductModal');
-                setTimeout(() => document.getElementById('addProductName').focus(), 100);
-            }
-        }
-
-        function saveProductFromModal() {
-            const name = document.getElementById('productName').value.trim();
-            const price = parseInt(document.getElementById('productPrice').value);
-            const cost = parseInt(document.getElementById('productCost').value) || 0;
-            if (!name || !price) return showNotification('Isi data lengkap', 'error');
-            productDatabase[tempCode] = { name, price, cost };
-            saveData();
-            addToCart(tempCode);
-            closeModal('productModal');
-            playBeep();
-            showNotification('Produk disimpan', 'success');
-        }
-
-        function saveNewProduct() {
-            const name = document.getElementById('addProductName').value.trim();
-            const price = parseInt(document.getElementById('addProductPrice').value);
-            const cost = parseInt(document.getElementById('addProductCost').value) || 0;
-            if (!name || !price) return showNotification('Isi data lengkap', 'error');
-            productDatabase[tempCode] = { name, price, cost };
-            saveData();
-            closeModal('addProductModal');
-            playBeep();
-            showNotification('Barang Stok Baru Disimpan', 'success');
-            document.getElementById('stockModeContainer').innerHTML = `<span>✅ Berhasil menambah <b>${name}</b></span>`;
-        }
-
-        // --- STOCK MANAGEMENT (Settings Tab) ---
-        function renderStockList() {
-            const container = document.getElementById('stockListContainer');
-            const search = document.getElementById('stockSearch').value.toLowerCase();
-            const keys = Object.keys(productDatabase);
-            document.getElementById('stockCountDisplay').textContent = keys.length + ' Barang';
-
-            if (keys.length === 0) {
-                container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Belum ada stok barang.</div>';
-                return;
-            }
-            const filtered = keys.filter(code => {
-                const p = productDatabase[code];
-                return code.toLowerCase().includes(search) || p.name.toLowerCase().includes(search);
-            });
+            const list = document.getElementById('productList');
             if (filtered.length === 0) {
-                container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Barang tidak ditemukan.</div>';
+                list.innerHTML = '<div class="empty-state"><div class="empty-icon">📦</div><div>Tidak ada produk</div></div>';
                 return;
             }
-            container.innerHTML = filtered.map(code => {
-                const p = productDatabase[code];
-                return `
-                <div class="stock-item">
-                    <div class="stock-info">
-                        <span class="stock-name">${p.name}</span>
-                        <span class="stock-code">${code}</span>
+            
+            list.innerHTML = filtered.map(p => `
+                <div class="product-item">
+                    <div>
+                        <div style="font-weight: 600;">${p.name}</div>
+                        <div class="product-barcode">${p.barcode}</div>
+                        <div style="color: #4f46e5; font-weight: 600;">Rp ${formatRupiah(p.price)} | Stok: ${p.stock}</div>
                     </div>
-                    <div class="stock-price">${formatRupiah(p.price)}</div>
-                    <div class="stock-actions">
-                        <button class="icon-btn edit" onclick="openEditStock('${code}')" title="Edit">✏️</button>
-                        <button class="icon-btn delete" onclick="deleteStock('${code}')" title="Hapus">🗑️</button>
+                    <div class="product-actions">
+                        <button class="btn btn-primary btn-sm" onclick="editProduct('${p.barcode}')">✏️</button>
+                        <button class="btn btn-danger btn-sm" onclick="deleteProduct('${p.barcode}')">🗑️</button>
                     </div>
-                </div>`;
-            }).join('');
+                </div>
+            `).join('');
         }
 
-        function openEditStock(code) {
-            const p = productDatabase[code];
-            document.getElementById('editCode').value = code;
-            document.getElementById('editName').value = p.name;
-            document.getElementById('editPrice').value = p.price;
-            document.getElementById('editCost').value = p.cost || 0;
-            openModal('editStockModal');
-        }
-
-        function saveEditStock() {
-            const code = document.getElementById('editCode').value;
-            const name = document.getElementById('editName').value.trim();
-            const price = parseInt(document.getElementById('editPrice').value);
-            const cost = parseInt(document.getElementById('editCost').value) || 0;
-            if (!name || !price) return showNotification('Data tidak lengkap', 'error');
-            productDatabase[code] = { name, price, cost };
-            saveData();
-            renderStockList();
-            closeModal('editStockModal');
-            showNotification('Perubahan disimpan', 'success');
-        }
-
-        function deleteStock(code) {
-            if(confirm('Yakin ingin menghapus barang ini dari database?')) {
-                delete productDatabase[code];
-                saveData();
-                renderStockList();
-                showNotification('Barang dihapus', 'success');
-            }
-        }
-
-        // --- CART UI ---
-        function renderCart() {
-            const container = document.getElementById('cartItems');
-            const countEl = document.getElementById('cartCount');
-            if (cart.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding:20px; color:#ccc;"><p style="font-size:0.8rem; margin-top:5px;">Keranjang kosong</p></div>`;
-                countEl.textContent = '0 item';
-            } else {
-                countEl.textContent = cart.reduce((a,b)=>a+b.qty,0) + ' item';
-                container.innerHTML = cart.map((item, idx) => `
-                    <div class="cart-item">
-                        <div class="cart-item-info">
-                            <div class="cart-item-name">${item.name}</div>
-                            <div class="cart-item-price">${formatRupiah(item.price)}</div>
-                        </div>
-                        <div class="qty-controls">
-                            <button class="qty-btn" onclick="updateQty(${idx}, -1)">-</button>
-                            <span class="qty-val">${item.qty}</span>
-                            <button class="qty-btn" onclick="updateQty(${idx}, 1)">+</button>
-                        </div>
-                        <button class="delete-btn" onclick="deleteItem(${idx})">×</button>
-                    </div>
-                `).join('');
-            }
-        }
-
-        function updateQty(idx, delta) {
-            cart[idx].qty += delta;
-            if (cart[idx].qty <= 0) cart.splice(idx, 1);
-            renderCart();
-        }
-
-        function deleteItem(idx) {
-            cart.splice(idx, 1);
-            renderCart();
-        }
-
-        function updateTotals() {
-            const sub = cart.reduce((a, i) => a + (i.price * i.qty), 0);
-            const tax = Math.round(sub * (appSettings.taxRate / 100));
-            const total = sub + tax;
-            document.getElementById('subtotal').textContent = formatRupiah(sub);
-            document.getElementById('taxRateDisplay').textContent = appSettings.taxRate;
-            document.getElementById('tax').textContent = formatRupiah(tax);
-            document.getElementById('grandTotal').textContent = formatRupiah(total);
-
-            const exactBtn = document.getElementById('exactBtn');
-            exactBtn.textContent = cart.length > 0 ? `💰 Pas (${formatRupiah(total)})` : '💰 Uang Pas';
-            calculateChange();
-        }
-
-        function getGrandTotal() {
-            const sub = cart.reduce((a, i) => a + (i.price * i.qty), 0);
-            return sub + Math.round(sub * (appSettings.taxRate / 100));
-        }
-
-        function calculateChange() {
-            const pay = parseFloat(document.getElementById('paymentAmount').value) || 0;
-            const total = getGrandTotal();
-            const change = pay - total;
-            const display = document.getElementById('changeDisplay');
-            if (pay > 0 && cart.length > 0) {
-                display.style.display = 'block';
-                const changeTxt = document.getElementById('changeAmount');
-                if (change >= 0) {
-                    changeTxt.textContent = formatRupiah(change);
-                    display.className = 'change-display';
-                } else {
-                    changeTxt.textContent = 'Kurang ' + formatRupiah(Math.abs(change));
-                    display.className = 'change-display short';
-                }
-            } else {
-                display.style.display = 'none';
-            }
-        }
-
-        function clearCart() {
-            if (!cart.length) return;
-            if(confirm('Kosongkan keranjang?')) {
-                cart = [];
-                document.getElementById('paymentAmount').value = '';
-                renderCart();
-            }
-        }
-
-        function processPayment() {
-            if (!cart.length) return showNotification('Keranjang kosong', 'error');
-            const total = getGrandTotal();
-            const pay = parseFloat(document.getElementById('paymentAmount').value) || 0;
-            if (pay < total) return showNotification('Uang kurang!', 'error');
-            
-            // Save Data
-            const totalCost = cart.reduce((sum, item) => sum + ((item.cost || 0) * item.qty), 0);
-            const tx = {
-                id: 'TX-' + Date.now(),
-                date: new Date().toISOString(),
-                items: [...cart], 
-                total: total,
-                pay: pay,
-                change: pay - total,
-                totalCost: totalCost 
-            };
-            salesHistory.unshift(tx);
-            saveData();
-
-            // Render Receipt Preview
-            const now = new Date(tx.date);
-            document.getElementById('rStoreName').textContent = appSettings.storeName;
-            document.getElementById('rDatePreview').textContent = now.toLocaleString('id-ID');
-            let html = '';
-            tx.items.forEach(i => {
-                html += `<div class="receipt-item"><span>${i.name} x${i.qty}</span><span>${formatRupiah(i.price*i.qty)}</span></div>`;
-            });
-            const sub = cart.reduce((a,i)=>a+(i.price*i.qty),0);
-            const tax = Math.round(sub*(appSettings.taxRate/100));
-            html += `<div class="receipt-total"><div class="receipt-item"><span>Subtotal</span><span>${formatRupiah(sub)}</span></div>`;
-            html += `<div class="receipt-total"><div class="receipt-item" style="font-size:1.1rem; margin-top:5px;"><span>TOTAL</span><span>${formatRupiah(total)}</span></div>`;
-            html += `<div class="receipt-total"><div class="receipt-item"><span>Bayar</span><span>${formatRupiah(pay)}</span></div>`;
-            html += `<div class="receipt-total"><div class="receipt-item" style="color:#27ae60;">Kembali: ${formatRupiah(pay-total)}</span></div>`;
-            
-            document.getElementById('receiptItemsPreview').innerHTML = html;
-            playBeep();
-            openModal('receiptModal');
-        }
-
-        function closeReceipt() {
-            closeModal('receiptModal');
-            cart = [];
-            document.getElementById('paymentAmount').value = '';
-            renderCart();
-            showNotification('Transaksi Selesai', 'success');
-        }
-
-        // --- SETTINGS & REPORTS ---
-        function openSettings() {
-            updateSettingsUI();
-            renderReports();
-            renderStockList();
-            openModal('settingsModal');
-        }
-
-        // --- BLUETOOTH LOGIC ---
-        async function connectBluetooth() {
-            if (!navigator.bluetooth) return alert('Browser ini tidak mendukung Web Bluetooth. Gunakan Chrome/Edge di Android/Windows.');
-
-            try {
-                showNotification('Mencari printer...', 'normal');
-                bluetoothDevice = await navigator.bluetooth.requestDevice({
-                    filters: [{ services: [ESC_POS_SERVICE] }],
-                    optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb']
-                });
-
-                bluetoothDevice.addEventListener('gattserverdisconnected', () => {
-                    updateBluetoothStatus(false);
-                    showNotification('Bluetooth Terputus', 'error');
-                });
-
-                const server = await bluetoothDevice.gatt.connect();
-                const service = await server.getPrimaryService(ESC_POS_SERVICE);
-                try {
-                    bluetoothCharacteristic = await service.getCharacteristic(ESC_POS_WRITE);
-                } catch (e) {
-                    const characteristics = await service.getCharacteristics();
-                    for (let c of characteristics) {
-                        if (c.properties.write || c.properties.writeWithoutResponse) {
-                            bluetoothCharacteristic = c; break;
-                        }
-                    }
-                }
-
-                updateBluetoothStatus(true);
-                showNotification('Bluetooth Terhubung ke ' + (bluetoothDevice ? bluetoothDevice.name : 'Printer'), 'success');
-            } catch (error) {
-                console.error(error);
-                showNotification('Gagal koneksi bluetooth: ' + error, 'error');
-            }
-        }
-
-        function updateBluetoothStatus(connected) {
-            const dot = document.getElementById('btDot');
-            const text = document.getElementById('btStatusText');
-            if(connected) {
-                dot.classList.add('connected');
-                text.textContent = "Terhubung ke " + (bluetoothDevice ? bluetoothDevice.name : 'Printer');
-            } else {
-                dot.classList.remove('connected');
-                text.textContent = "Terputus";
-            }
-        }
-
-        async function printBluetooth() {
-            if (!bluetoothCharacteristic) {
-                return alert('Printer belum terhubung!');
-            }
-
-            const encoder = new TextEncoder();
-            const lines = [];
-            
-            lines.push(new Uint8Array([0x1B, 0x61, 0x01])); // Center
-            lines.push(encoder.encode(appSettings.storeName + '\n'));
-            lines.push(encoder.encode(new Date().toLocaleString('id-ID') + '\n'));
-            lines.push(new Uint8Array([0x1B, 0x61, 0x00])); // Left
-            
-            cart.forEach(item => {
-                const line = `${item.name.substring(0,16)} x${item.qty}         ${formatRupiah(item.price*item.qty).replace('Rp ', '')}\n`;
-                lines.push(encoder.encode(line));
-            });
-            const total = getGrandTotal();
-            lines.push(new Uint8Array([0x1B, 0x45, 0x01])); // Bold
-            lines.push(encoder.encode('------------------------\n'));
-            lines.push(encoder.encode(`TOTAL     ${formatRupiah(total).replace('Rp ', '')}\n`));
-            lines.push(new Uint8Array([0x1B, 0x46, 0x00])); // Bold off
-
-            lines.push(new Uint8Array([0x0A, 0x0A, 0x0A, 0x1D, 0x56, 0x00])); // Cut
-
-            try {
-                for (let line of lines) {
-                    await bluetoothCharacteristic.writeValue(line);
-                }
-                showNotification('Terkirim ke Printer', 'success');
-            } catch (error) {
-                showNotification('Gagal mencetak: ' + error, 'error');
-            }
-        }
-
-        function printSystem() {
-            window.print();
-        }
-
-        // --- DATA ---
-        function exportData() {
-            const data = { products: productDatabase, settings: appSettings, history: salesHistory };
-            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'backup_kasir_' + Date.now() + '.json';
-            a.click();
-        }
-
-        function importData(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                try {
-                    const data = JSON.parse(ev.target.result);
-                    if(data.products) productDatabase = data.products;
-                    if(data.settings) appSettings = data.settings;
-                    if(data.history) salesHistory = data.history;
-                    saveData();
-                    renderCart();
-                    updateSettingsUI();
-                    renderStockList();
-                    showNotification('Backup berhasil dimuat', 'success');
-                } catch(err) {
-                    showNotification('File backup tidak valid', 'error');
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function exportCSV() {
-            let csv = 'Tanggal,Waktu,Total,Item List\n';
-            salesHistory.forEach(tx => {
-                const d = new Date(tx.date);
-                const dateStr = d.toLocaleDateString('id-ID');
-                const items = tx.items.map(i=>`${i.name} (x${i.qty})`).join('; ');
-                csv += `"${dateStr}",${tx.total},"${items}"\n`;
-            });
-            const blob = new Blob([csv], {type: 'text/csv'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'laporan_penjualan.csv';
-            a.click();
-        }
-
-        function resetFactory() {
-            if(confirm('PERINGATAN: Semua data akan dihapus permanen!')) {
-                localStorage.clear();
-                location.reload();
-            }
-        }
-
-        // --- REPORTS ---
-        function renderReports() {
-            const now = new Date();
-            const curMonth = now.getMonth();
-            const curYear = now.getFullYear();
-            let monthlyRevenue = 0;
-            let monthlyCost = 0;
-            let monthlyCount = 0;
-            
-            const monthlyTx = salesHistory.filter(tx => {
-                const d = new Date(tx.date);
-                return d.getMonth() === curMonth && d.getFullYear() === curYear;
-            });
-
-            monthlyTx.forEach(tx => {
-                monthlyRevenue += tx.total;
-                if (tx.totalCost !== undefined) {
-                    monthlyCost += tx.totalCost;
-                } else {
-                    monthlyCost += tx.items.reduce((sum, i) => sum + ((i.cost || 0) * i.qty), 0);
-                }
-                monthlyCount++;
-            });
-
-            const monthlyProfit = monthlyRevenue - monthlyCost;
-            const margin = monthlyRevenue > 0 ? Math.round((monthlyProfit / monthlyRevenue) * 100) : 0;
-
-            document.getElementById('monthlyReportTotal').textContent = formatRupiah(monthlyRevenue);
-            document.getElementById('monthlyReportCount').textContent = monthlyCount + ' Transaksi';
-            document.getElementById('monthlyReportProfit').textContent = formatRupiah(monthlyProfit);
-            document.getElementById('monthlyReportMargin').textContent = margin + '%';
-
-            const list = document.getElementById('reportListContainer');
-            if (monthlyTx.length === 0) {
-                list.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Belum ada data.</div>';
+        // History
+        function renderHistory() {
+            const list = document.getElementById('transactionList');
+            if (transactions.length === 0) {
+                list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><div>Belum ada transaksi</div></div>';
                 return;
-            } else {
-                list.innerHTML = monthlyTx.map(tx => {
-                    const dateObj = new Date(tx.date);
-                    const dateStr = dateObj.toLocaleDateString('id-ID', {day: 'numeric', month:'short'});
-                    const timeStr = dateObj.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
-                    
-                    let itemsHtml = tx.items.map(i => {
-                        const itemCost = i.cost || 0;
-                        const itemProfit = (i.price - itemCost) * i.qty;
-                        if (itemCost > 0) {
-                            return `<div>${i.name} (x${i.qty}) <span class="report-item-profit">+${formatRupiah(itemProfit)}</span></div>`;
-                        } else {
-                            return `<div>${i.name} (x${i.qty})</div>`;
-                        }
-                    }).join('');
-
-                    const txCost = tx.totalCost || tx.items.reduce((s, i) => s + ((i.cost || 0) * i.qty), 0);
-                    const txProfit = tx.total - txCost;
-
-                    return `
-                        <div class="report-item">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span style="font-weight:bold; font-size:0.9rem;">${dateStr} • ${timeStr}</span>
-                                <span style="font-weight:bold; color:#4e54c8;">${formatRupiah(tx.total)}</span>
-                            </div>
-                            <div class="report-detail-items">
-                                ${itemsHtml}
-                                ${txCost > 0 ? `<div style="margin-top:4px; font-weight:bold; color:#27ae60; border-top:1px dashed #ddd; padding-top:2px;">Total Laba Tx: ${formatRupiah(txProfit)}</div>` : ''}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
             }
+            
+            list.innerHTML = transactions.map(t => `
+                <div class="transaction-item">
+                    <div class="transaction-header">
+                        <span class="transaction-date">${t.date}</span>
+                        <span class="transaction-amount">Rp ${formatRupiah(t.total)}</span>
+                    </div>
+                    <div class="transaction-items">
+                        ${t.items.length} item: ${t.items.map(i => i.name).join(', ')}
+                    </div>
+                </div>
+            `).join('');
         }
 
-        function resetFactory() {
-            if(confirm('PERINGATAN: Semua data akan dihapus permanen!')) {
-                localStorage.clear();
-                location.reload();
-            }
+        function clearHistory() {
+            if (!confirm('Yakin hapus semua riwayat?')) return;
+            transactions = [];
+            localStorage.setItem('kasir_transactions', JSON.stringify(transactions));
+            renderHistory();
+            showToast('Riwayat dihapus');
         }
 
-        function exportData() {
-            const data = { products: productDatabase, settings: appSettings, history: salesHistory };
-            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'backup_kasir_' + Date.now() + '.json';
-            a.click();
-        }
-
-        function importData(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                try {
-                    const data = JSON.parse(ev.target.result);
-                    if(data.products) productDatabase = data.products;
-                    if(data.settings) appSettings = data.settings;
-                    if(data.history) salesHistory = data.history;
-                    saveData();
-                    renderCart();
-                    updateSettingsUI();
-                    renderStockList();
-                    showNotification('Backup berhasil dimuat');
-                } catch(err) {
-                    showNotification('File backup tidak valid', 'error');
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        // --- AUDIO SYSTEM (SOUND: TUNG) ---
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
-
-        function playBeep() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const t = audioCtx.currentTime;
-            const createOsc = (startTime, freq, duration) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                // "Tung" -> 400Hz
-                osc.type = 'triangle';
-                osc.frequency.setValueAtTime(freq, startTime);
-                gain.gain.setValueAtTime(0.1, startTime);
-                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-                
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(startTime);
-                osc.stop(startTime + duration);
-            };
-            const duration = 0.1; // 100ms
-
-            createOsc(t, 400, 0.1); 
-        }
-
-        // --- INIT & LOCAL STORAGE ---
-        window.onload = function() {
-            loadData();
-            renderCart();
-            updateSettingsUI();
-        };
-
-        function loadData() {
-            const p = localStorage.getItem('kasir_products');
-            const s = localStorage.getItem('kasir_settings');
-            const h = localStorage.getItem('kasir_history');
-
-            if (p) productDatabase = JSON.parse(p);
-            else {
-                productDatabase = {
-                    '8998866200313': { name: 'Indomie Goreng', price: 3500, cost: 3000 },
-                    '8996001600269': { name: 'Aqua 600ml', price: 4000, cost: 3000 },
-                    '8999999526452': { name: 'Teh Pucuk 350ml', price: 4000, cost: 3500 }
-                };
-            }
-            if (s) appSettings = JSON.parse(s);
-            if (h) salesHistory = JSON.parse(h);
-        }
-
-        function saveData() {
-            localStorage.setItem('kasir_products', JSON.stringify(productDatabase));
-            localStorage.setItem('kasir_settings', JSON.stringify(appSettings));
-            localStorage.setItem('kasir_history', JSON.stringify(salesHistory));
-        }
-
+        // Utilities
         function formatRupiah(num) {
-            return 'Rp ' + Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
         }
 
-        function showNotification(msg, type = 'normal') {
-            const el = document.getElementById('notification');
-            el.textContent = msg;
-            el.style.background = type === 'error' ? '#e74c3c' : type === 'success' ? '#27ae60' : '#333';
-            el.classList.add('show');
-            setTimeout(() => el.classList.remove('show'), 2500);
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
         }
 
-        function closeModal(id) {
-            document.getElementById(id).classList.remove('active');
-        }
-        function openModal(id) {
-            document.getElementById(id).classList.add('active');
+        function updateStats() {
+            document.getElementById('totalProducts').textContent = products.length + ' Produk';
         }
 
-        // --- MODE SWITCHING & UI CHANGES ---
-        function switchMode(mode) {
-            currentMode = mode;
-            const btnJual = document.getElementById('modeJual');
-            const btnStok = document.getElementById('modeStok');
-            btnJual.classList.toggle('active', mode === 'jual');
-            btnStok.classList.toggle('active', mode === 'stok');
-            btnStok.classList.toggle('stok-active', mode === 'stok');
-
-            const header = document.getElementById('mainHeader');
-            const hTitle = document.getElementById('headerTitle');
-            const hSub = document.getElementById('headerSubtitle');
-            
-            if (mode === 'stok') {
-                header.classList.remove('mode-kasir'); header.classList.add('mode-stok');
-                hTitle.textContent = "Mode Inventaris";
-                hSub.textContent = "Tambah Stok Barang";
-                document.body.style.background = "linear-gradient(135deg, #fff1eb 0%, #ace0f9 100%)";
-                document.getElementById('scanLine').classList.add('stock-active');
-                ['cornerTL','cornerTR','cornerBL','cornerBR'].forEach(id => document.getElementById(id).classList.add('stock-active'));
-                document.getElementById('stockModeContainer').classList.add('active');
-                document.getElementById('cartSection').classList.add('hidden');
-                document.getElementById('totalSection').classList.add('hidden');
-                document.getElementById('paymentSection').classList.add('hidden');
-                document.getElementById('actionButtons').classList.add('hidden');
-                document.getElementById('manualCheckBtn').textContent = "Tambah";
-                updateScanStatusText(); // Update pesan agar jelas mode aktif
-                showNotification('📦 Mode Stok Aktif');
-            } else {
-                header.classList.remove('mode-stok'); header.classList.add('mode-kasir');
-                hTitle.textContent = "Kasir Scan Pro"; hSub.textContent = "QR/Barcode & Stok";
-                document.body.style.background = "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)";
-                document.getElementById('scanLine').classList.remove('stock-active');
-                ['cornerTL','cornerTR','cornerBL','cornerBR'].forEach(id => document.getElementById(id).classList.remove('stock-active'));
-                document.getElementById('stockModeContainer').classList.remove('active');
-                document.getElementById('cartSection').classList.remove('hidden');
-                document.getElementById('totalSection').classList.remove('hidden');
-                document.getElementById('paymentSection').classList.remove('hidden');
-                document.getElementById('actionButtons').classList.remove('hidden');
-                document.getElementById('manualCheckBtn').textContent = "Cek";
-                updateScanStatusText(); // Update pesan agar jelas mode aktif
-                showNotification('🛍️ Mode Kasir Aktif');
-            }
-            const scanMsg = document.getElementById('scanStatusMsg');
-            scanMsg.textContent = mode === 'stok' ? "📦 Mode Inventaris: Siap scan barang baru..." : "🛍️ Mode Kasir...";
+        // Service Worker for offline
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('data:text/javascript,' + encodeURIComponent(`
+                self.addEventListener('install', e => e.waitUntil(self.skipWaiting()));
+                self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+                self.addEventListener('fetch', e => e.respondWith(fetch(e.request).catch(() => new Response('Offline'))));
+            `)).catch(() => {});
         }
 
-        function updateScanStatusText() {
-            const el = document.getElementById('scanStatusMsg');
-            // Jika sedang scanning, bilang sedang mencari...
-            if (isScanning) {
-                el.textContent = "🔍 Sedang mencari barcode...";
-                el.classList.add('info');
-            } else {
-                el.textContent = "Kamera non-aktif";
-            }
-        }
-
-        // --- SCANNER LOGIC (FIXED) ---
-        async function startScanner() {
-            if (isScanning) return;
-            
-            // 1. Cek browser support
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                showNotification('Tidak ada kamera.', 'error');
-                return;
-            }
-
-            const Html5QrcodeConstructor = window.Html5Qrcode || window.html5Qrcode;
-            if (!Html5QrcodeConstructor) {
-                showNotification('Library scanner gagal load.', 'error');
-                return;
-            }
-
-            try {
-                // Bersihkan elemen video lama
-                const readerEl = document.getElementById('reader');
-                readerEl.innerHTML = '';
-
-                html5QrCode = new Html5QrcodeConstructor("reader");
-                const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-                
-                // Menggunakan "rear camera" agar scan lebih mudah (tanpa perlu belakang)
-                await html5QrCode.start(
-                    { facingMode: "environment" }, 
-                    config, 
-                    onScanSuccess, 
-                    (err) => { // Ignore spam error
-                        if (err && err.name !== 'AbortError') console.warn(err); 
-                    }
-                );
-                
-                isScanning = true;
-                document.getElementById('startBtn').classList.add('hidden');
-                document.getElementById('stopBtn').classList.remove('hidden');
-                document.getElementById('scanLine').classList.remove('hidden');
-                
-                const scanMsg = document.getElementById('scanStatusMsg');
-                scanMsg.textContent = "📷 Scanning...";
-                scanMsg.classList.add('active');
-                document.getElementById('scanStatusMsg').classList.remove('error');
-                document.getElementById('scanStatusMsg').classList.remove('info');
-                playBeep();
-                showNotification('📷 Kamera Aktif', 'success');
-            } catch (err) {
-                console.error(err);
-                let errorMsg = "Gagal scan";
-                if (err.name === 'NotAllowedError') errorMsg = "Izin kamera ditolak.";
-                else if (err.name === 'NotFoundError') errorMsg = "Kamera tidak ditemukan.";
-                else if (err.name === 'NotSupportedError') errorMsg = "Browser tidak mendukung kamera.";
-                else errorMsg = "Kamera sedang dipakai aplikasi lain.";
-
-                document.getElementById('scanStatusMsg').textContent = "❌ " + errorMsg;
-                document.getElementById('scanStatusMsg').classList.add('error');
-
-                // Pastikan tombol stop agar user bisa mencoba kamera lain
-                const stopBtn = document.getElementById('stopBtn');
-                stopBtn.classList.remove('hidden');
-            }
-        }
-
-        async function stopScanner() {
-            if (!isScanning || !html5QrCode) return;
-            try {
-                await html5QrCode.stop();
-                isScanning = false;
-                document.getElementById('startBtn').classList.remove('hidden');
-                document.getElementById('stopBtn').classList.add('hidden');
-                document.getElementById('scanLine').classList.add('hidden');
-                document.getElementById('scanStatusMsg').textContent = "Kamera non-aktif";
-                document.getElementById('scanStatusMsg').classList.remove('active');
-                document.getElementById('scanStatusMsg').classList.remove('error');
-                document.getElementById('reader').innerHTML = "";
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        function onScanSuccess(decodedText, decodedResult) {
-            const now = Date.now();
-            if (now - lastScanTime < 500) return;
-            lastScanTime = now;
-            decodedText = decodedText.trim();
-            playBeep();
-            
-            const statusMsg = document.getElementById('scanStatusMsg');
-            statusMsg.textContent = "✅ " + decodedText;
-            statusMsg.classList.add('active');
-            
-            // Reset pesan status
-            setTimeout(() => { 
-                updateScanStatusText(); 
-                statusMsg.classList.remove('active'); 
-            }, 400);
-
-            if (currentMode === 'stok') handleAddProductScan(decodedText);
-            else handleJualScan(decodedText);
-        }
-
-        function handleJualScan(code) {
-            if (productDatabase[code]) addToCart(code);
-            else openAddProductModal(code, 'jual');
-        }
-
-        function processCode(code) {
-            if (productDatabase[code]) addToCart(code);
-            else openAddProductModal(code, 'jual');
-        }
-
-        function addToCart(code) {
-            const product = productDatabase[code];
-            const existing = cart.find(i => i.code === code);
-            const itemCost = product.cost || 0;
-            if (existing) existing.qty++;
-            else cart.push({ code: code, name: product.name, price: product.price, qty: 1, cost: itemCost });
-            renderCart();
-        }
-
-        function handleManualInput(e) {
-            if (e.key === 'Enter') handleManualAdd();
-        }
-
-        function handleManualAdd() {
-            const val = document.getElementById('manualCode').value.trim();
-            if (!val) return;
-            if (currentMode === 'stok') handleAddProductScan(val);
-            else processCode(val);
-            document.getElementById('manualCode').value = '';
-        }
-
-        // --- STOCK LOGIC ---
-        function handleAddProductScan(code) {
-            if (productDatabase[code]) {
-                showNotification('Barang sudah ada! Gunakan menu Stok untuk edit.', 'error');
-            } else {
-                openAddProductModal(code, 'stok');
-            }
-        }
-
-        function openAddProductModal(code, source) {
-            tempCode = code;
-            if (source === 'jual') {
-                document.getElementById('modalCode').textContent = code;
-                document.getElementById('productName').value = '';
-                document.getElementById('productPrice').value = '';
-                document.getElementById('productCost').value = '';
-                openModal('productModal');
-                setTimeout(() => document.getElementById('productName').focus(), 100);
-            } else {
-                document.getElementById('addModalCode').textContent = code;
-                document.getElementById('addProductName').value = '';
-                document.getElementById('addProductPrice').value = '';
-                document.getElementById('addProductCost').value = '';
-                openModal('addProductModal');
-                setTimeout(() => document.getElementById('addProductName').focus(), 100);
-            }
-        }
-
-        function saveProductFromModal() {
-            const name = document.getElementById('productName').value.trim();
-            const price = parseInt(document.getElementById('productPrice').value);
-            const cost = parseInt(document.getElementById('productCost').value) || 0;
-            if (!name || !price) return showNotification('Isi data lengkap', 'error');
-            productDatabase[tempCode] = { name, price, cost };
-            saveData();
-            addToCart(tempCode);
-            closeModal('productModal');
-            playBeep();
-            showNotification('Produk disimpan', 'success');
-        }
-
-        function saveNewProduct() {
-            const name = document.getElementById('addProductName').value.trim();
-            const price = parseInt(document.getElementById('addProductPrice').value);
-            const cost = parseInt(document.getElementById('addProductCost').value) || 0;
-            if (!name || !price) return showNotification('Isi data lengkap', 'error');
-            productDatabase[tempCode] = { name, price, cost };
-            saveData();
-            closeModal('addProductModal');
-            playBeep();
-            showNotification('Barang Stok Baru Disimpan', 'success');
-            document.getElementById('stockModeContainer').innerHTML = `<span>✅ Berhasil menambah <b>${name}</b></span>`;
-        }
-
-        // --- STOCK MANAGEMENT (Settings Tab) ---
-        function renderStockList() {
-            const container = document.getElementById('stockListContainer');
-            const search = document.getElementById('stockSearch').value.toLowerCase();
-            const keys = Object.keys(productDatabase);
-            document.getElementById('stockCountDisplay').textContent = keys.length + ' Barang';
-
-            if (keys.length === 0) {
-                container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Belum ada stok barang.</div>';
-                return;
-            }
-
-            const filtered = keys.filter(code => {
-                const p = productDatabase[code];
-                return code.toLowerCase().includes(search) || p.name.toLowerCase().includes(search);
+        // Close modals on outside click
+        document.querySelectorAll('.modal-overlay').forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) overlay.classList.remove('active');
             });
-            if (filtered.length === 0) {
-                container.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Barang tidak ditemukan.</div>';
-                return;
-            }
-            container.innerHTML = filtered.map(code => {
-                const p = productDatabase[code];
-                return `
-                <div class="stock-item">
-                    <div class="stock-info">
-                        <span class="stock-name">${p.name}</span>
-                        <span class="stock-code">${code}</span>
-                    </div>
-                    <div class="stock-price">${formatRupiah(p.price)}</div>
-                    <div class="stock-actions">
-                        <button class="icon-btn edit" onclick="openEditStock('${code}')" title="Edit">✏️</button>
-                        <button class="icon-btn delete" onclick="deleteStock('${code}')" title="Hapus">🗑️</button>
-                    </div>
-                </div>`;
-            }).join('');
-        }
-
-        function openEditStock(code) {
-            const p = productDatabase[code];
-            document.getElementById('editCode').value = code;
-            document.getElementById('editName').value = p.name;
-            document.getElementById('editPrice').value = p.price;
-            document.getElementById('editCost').value = p.cost || 0;
-            openModal('editStockModal');
-        }
-
-        function saveEditStock() {
-            const code = document.getElementById('editCode').value;
-            const name = document.getElementById('editName').value.trim();
-            const price = parseInt(document.getElementById('editPrice').value);
-            const cost = parseInt(document.getElementById('editCost').value) || 0;
-            if (!name || !price) return showNotification('Data tidak lengkap', 'error');
-            productDatabase[code] = { name, price, cost };
-            saveData();
-            renderStockList();
-            closeModal('editStockModal');
-            showNotification('Perubahan disimpan', 'success');
-        }
-
-        function deleteStock(code) {
-            if(confirm('Yakin ingin menghapus barang ini dari database?')) {
-                delete productDatabase[code];
-                saveData();
-                renderStockList();
-                showNotification('Barang dihapus', 'success');
-            }
-        }
-
-        // --- CART UI ---
-        function renderCart() {
-            const container = document.getElementById('cartItems');
-            const countEl = document.getElementById('cartCount');
-            if (cart.length === 0) {
-                container.innerHTML = `<div style="text-align:center; padding:20px; color:#ccc;"><p style="font-size:0.8rem; margin-top:5px;">Keranjang kosong</p></div>`;
-                countEl.textContent = '0 item';
-            } else {
-                countEl.textContent = cart.reduce((a,b)=>a+b.qty,0) + ' item';
-                container.innerHTML = cart.map((item, idx) => `
-                    <div class="cart-item">
-                        <div class="cart-item-info">
-                            <div class="cart-item-name">${item.name}</div>
-                            <div class="cart-item-price">${formatRupiah(item.price)}</div>
-                        </div>
-                        <div class="qty-controls">
-                            <button class="qty-btn" onclick="updateQty(${idx}, -1)">-</button>
-                            <span class="qty-val">${item.qty}</span>
-                            <button class="qty-btn" onclick="updateQty(${idx}, 1)">+</button>
-                        </div>
-                        <button class="delete-btn" onclick="deleteItem(${idx})">×</button>
-                    </div>
-                `).join('');
-            }
-        }
-
-        function updateQty(idx, delta) {
-            cart[idx].qty += delta;
-            if (cart[idx].qty <= 0) cart.splice(idx, 1);
-            renderCart();
-        }
-
-        function deleteItem(idx) {
-            cart.splice(idx, 1);
-            renderCart();
-        }
-
-        function updateTotals() {
-            const sub = cart.reduce((a, i) => a + (i.price * i.qty), 0);
-            const tax = Math.round(sub * (appSettings.taxRate / 100));
-            const total = sub + tax;
-            document.getElementById('subtotal').textContent = formatRupiah(sub);
-            document.getElementById('taxRateDisplay').textContent = appSettings.taxRate;
-            document.getElementById('tax').textContent = formatRupiah(tax);
-            document.getElementById('grandTotal').textContent = formatRupiah(total);
-            const exactBtn = document.getElementById('exactBtn');
-            exactBtn.textContent = cart.length > 0 ? `💰 Pas (${formatRupiah(total)})` : '💰 Uang Pas';
-            calculateChange();
-        }
-
-        function getGrandTotal() {
-            const sub = cart.reduce((a, i) => a + (i.price * i.qty), 0);
-            return sub + Math.round(sub * (appSettings.taxRate / 100));
-        }
-
-        // --- PAYMENT ---
-        function quickPay(amount) {
-            document.getElementById('paymentAmount').value = amount;
-            calculateChange();
-        }
-
-        function quickPayExact() {
-            if (cart.length === 0) return;
-            quickPay(getGrandTotal());
-        }
-
-        function calculateChange() {
-            const pay = parseFloat(document.getElementById('paymentAmount').value) || 0;
-            const total = getGrandTotal();
-            const change = pay - total;
-            const display = document.getElementById('changeDisplay');
-            if (pay > 0 && cart.length > 0) {
-                display.style.display = 'block';
-                const changeTxt = document.getElementById('changeAmount');
-                if (change >= 0) {
-                    changeTxt.textContent = formatRupiah(change);
-                    display.className = 'change-display';
-                } else {
-                    changeTxt.textContent = 'Kurang ' + formatRupiah(Math.abs(change));
-                    display.className = 'change-display short';
-                }
-            } else {
-                display.style.display = 'none';
-            }
-        }
-
-        function clearCart() {
-            if (!cart.length) return;
-            if(confirm('Kosongkan keranjang?')) {
-                cart = [];
-                document.getElementById('paymentAmount').value = '';
-                renderCart();
-            }
-        }
-
-        function processPayment() {
-            if (!cart.length) return showNotification('Keranjang kosong', 'error');
-            const total = getGrandTotal();
-            const pay = parseFloat(document.getElementById('paymentAmount').value) || 0;
-            if (pay < total) return showNotification('Uang kurang!', 'error');
-
-            const totalCost = cart.reduce((sum, item) => sum + ((item.cost || 0) * item.qty), 0);
-            const tx = {
-                id: 'TX-' + Date.now(),
-                date: new Date().toISOString(),
-                items: [...cart], 
-                total: total,
-                pay: pay,
-                change: pay - total,
-                totalCost: totalCost 
-            };
-            salesHistory.unshift(tx);
-            saveData();
-
-            const now = new Date(tx.date);
-            document.getElementById('rDatePreview').textContent = now.toLocaleString('id-ID');
-            document.getElementById('rStoreNamePreview').textContent = appSettings.storeName;
-            
-            let html = '';
-            tx.items.forEach(i => {
-                html += `<div class="receipt-item"><span>${i.name} x${i.qty}</span><span>${formatRupiah(i.price*i.qty)}</span></div>`;
-            });
-            const sub = cart.reduce((a,i)=>a+(i.price*i.qty),0);
-            const tax = Math.round(sub*(appSettings.taxRate/100));
-            html += `<div class="receipt-total"><div class="receipt-item"><span>Subtotal</span><span>${formatRupiah(sub)}</span></div>`;
-            html += `<div class="receipt-total"><div class="receipt-item"><span>Bayar</span><span>${formatRupiah(pay)}</span></div>`;
-            html += `<div class="receipt-total"><div class="receipt-item" style="color:#27ae60;">Kembali: ${formatRupiah(pay-total)}</div>`;
-            
-            document.getElementById('receiptItemsPreview').innerHTML = html;
-            playBeep();
-            openModal('receiptModal');
-        }
-
-        function closeReceipt() {
-            closeModal('receiptModal');
-            cart = [];
-            document.getElementById('paymentAmount').value = '';
-            renderCart();
-            playBeep();
-            showNotification('Transaksi Selesai', 'success');
-        }
-
-        // --- SETTINGS & REPORTS ---
-        function openSettings() {
-            updateSettingsUI();
-            renderReports();
-            renderStockList();
-            openModal('settingsModal');
-        }
-
-        function switchSettingsTab(tabName, el) {
-            document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
-            el.classList.add('active');
-            document.querySelectorAll('.settings-content').forEach(c => c.classList.remove('active'));
-            document.getElementById('tab-'+tabName).classList.add('active');
-            const footer = document.getElementById('settingsFooter');
-            if(tabName !== 'general') footer.style.display = 'none';
-            else footer.style.display = 'flex';
-            if (tabName === 'stock') renderStockList();
-        }
-
-        function updateSettingsUI() {
-            document.getElementById('settingStoreName').value = appSettings.storeName;
-            document.getElementById('settingStoreAddress').value = appSettings.storeAddress;
-            document.getElementById('settingTaxRate').value = appSettings.taxRate;
-        }
-
-        function saveSettings() {
-            appSettings.storeName = document.getElementById('settingStoreName').value;
-            appSettings.storeAddress = document.getElementById('settingStoreAddress').value;
-            appSettings.taxRate = parseFloat(document.getElementById('settingTaxRate').value) || 0;
-            saveData();
-            updateTotals();
-            closeModal('settingsModal');
-            showNotification('Pengaturan Disimpan', 'success');
-        }
-
-        function renderReports() {
-            const now = new Date();
-            const curMonth = now.getMonth();
-            const curYear = now.getFullYear();
-            let monthlyRevenue = 0;
-            let monthlyCost = 0;
-            let monthlyCount = 0;
-            
-            const monthlyTx = salesHistory.filter(tx => {
-                const d = new Date(tx.date);
-                return d.getMonth() === curMonth && d.getFullYear() === curYear;
-            });
-            monthlyTx.forEach(tx => {
-                monthlyRevenue += tx.total;
-                if (tx.totalCost !== undefined) monthlyCost += tx.totalCost;
-                else monthlyCost += tx.items.reduce((sum, i) => sum + ((i.cost || 0) * i.qty), 0);
-                monthlyCount++;
-            });
-
-            const monthlyProfit = monthlyRevenue - monthlyCost;
-            const margin = monthlyRevenue > 0 ? Math.round((monthlyProfit / monthlyRevenue) * 100) : 0;
-
-            document.getElementById('monthlyReportTotal').textContent = formatRupiah(monthlyRevenue);
-            document.getElementById('monthlyReportCount').textContent = monthlyCount + ' Transaksi';
-            document.getElementById('monthlyReportProfit').textContent = formatRupiah(monthlyProfit);
-            document.getElementById('monthlyReportMargin').textContent = margin + '%';
-
-            const list = document.getElementById('reportListContainer');
-            if (monthlyTx.length === 0) {
-                list.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Belum ada data.</div>';
-            } else {
-                list.innerHTML = monthlyTx.map(tx => {
-                    const dateObj = new Date(tx.date);
-                    const dateStr = dateObj.toLocaleDateString('id-ID', {day: 'numeric', month:'short'});
-                    const timeStr = dateObj.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
-                    let itemsHtml = tx.items.map(i => {
-                        const itemCost = i.cost || 0;
-                        const itemProfit = (i.price - itemCost) * i.qty;
-                        if (itemCost > 0) {
-                            return `<div>${i.name} (x${i.qty}) <span class="report-item-profit">+${formatRupiah(itemProfit)}</span></div>`;
-                        } else {
-                            return `<div>${i.name} (x${i.qty})</div>`;
-                        }
-                    }).join('');
-                    const txCost = tx.totalCost || tx.items.reduce((s, i) => s + ((i.cost || 0) * i.qty), 0);
-                    const txProfit = tx.total - txCost;
-                    return `
-                        <div class="report-item">
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span style="font-weight:bold; font-size:0.9rem;">${dateStr} • ${timeStr}</span>
-                                <span style="font-weight:bold; color:#4e54c8;">${formatRupiah(tx.total)}</span>
-                            </div>
-                            <div class="report-detail-items">
-                                ${itemsHtml}
-                                ${txCost > 0 ? `<div style="margin-top:4px; font-weight:bold; color:#27ae60; border-top:1px dashed #ddd; padding-top:2px;">Total Laba Tx: ${formatRupiah(txProfit)}</div>` : ''}
-                            </div>
-                        </div>
-                    `;
-                }).join('');
-            }
-        }
-
-        function resetFactory() {
-            if(confirm('PERINGATAN: Semua data akan dihapus permanen!')) {
-                localStorage.clear();
-                location.reload();
-            }
-        }
-
-        // --- DATA ---
-        function exportData() {
-            const data = { products: productDatabase, settings: appSettings, history: salesHistory };
-            const blob = new Blob([JSON.stringify(data)], {type: 'application/json'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'backup_kasir_' + Date.now() + '.json';
-            a.click();
-        }
-
-        function importData(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(ev) {
-                try {
-                    const data = JSON.parse(ev.target.result);
-                    if(data.products) productDatabase = data.products;
-                    if(data.settings) appSettings = data.settings;
-                    if(data.history) salesHistory = data.history;
-                    saveData();
-                    renderCart();
-                    updateSettingsUI();
-                    renderStockList();
-                    showNotification('Backup berhasil dimuat', 'success');
-                } catch(err) {
-                    showNotification('File backup tidak valid', 'error');
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function exportCSV() {
-            let csv = 'Tanggal,Waktu,Total,Item List\n';
-            salesHistory.forEach(tx => {
-                const d = new Date(tx.date);
-                const dateStr = d.toLocaleDateString('id-ID');
-                const timeStr = d.toLocaleTimeString('id-ID');
-                const items = tx.items.map(i=>`${i.name} (x${i.qty})`).join('; ');
-                const txCost = tx.totalCost || tx.items.reduce((s, i) => s + ((i.cost || 0) * i.qty), 0);
-                const profit = tx.total - txCost;
-                csv += `"${dateStr}","${timeStr}",${tx.total},${profit},"${items}"\n`;
-            });
-            const blob = new Blob([csv], {type: 'text/csv'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'laporan_penjualan.csv';
-            a.click();
-        }
-
-    </div>
+        });
+    </script>
 </body>
 </html>
