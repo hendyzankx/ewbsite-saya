@@ -60,33 +60,27 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        /* --- SCANNER SECTION (UPDATED) --- */
+        /* --- SCANNER SECTION --- */
         .scanner-wrapper {
             padding: 15px; background: #f8f9fa; text-align: center;
         }
-        
-        /* Container kecil untuk kamera */
         #reader-wrapper {
             position: relative;
-            width: 260px; /* Lebar lebih kecil */
-            height: 260px; /* Tinggi lebih kecil */
+            width: 260px; 
+            height: 260px; 
             margin: 0 auto 15px;
             border-radius: 20px;
             overflow: hidden;
-            border: 4px solid #ddd; /* Bingkai luar */
+            border: 4px solid #ddd; 
             box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
             background: #000;
         }
-
-        /* Scanner internal area */
         #reader {
             width: 100% !important;
             height: 100% !important;
             border: none !important;
             background: #000;
         }
-        
-        /* Scan Line Animation */
         .scan-line {
             position: absolute; top: 0; left: 0; width: 100%; height: 2px;
             background: #e74c3c;
@@ -101,8 +95,6 @@
             90% { opacity: 1; }
             100% { top: 250px; opacity: 0; }
         }
-
-        /* Corners effect */
         .corner {
             position: absolute; width: 40px; height: 40px;
             border: 4px solid #4e54c8; z-index: 11;
@@ -112,10 +104,7 @@
         .tr { top: 0; right: 0; border-left: none; border-bottom: none; border-radius: 0 15px 0 0; }
         .bl { bottom: 0; left: 0; border-right: none; border-top: none; border-radius: 0 0 0 15px; }
         .br { bottom: 0; right: 0; border-left: none; border-top: none; border-radius: 0 0 15px 0; }
-
         .scanner-controls { display: flex; gap: 10px; justify-content: center; }
-        
-        /* Status Scan */
         .scan-status-msg {
             font-size: 0.8rem; color: #666; margin-bottom: 5px; height: 1.2em;
         }
@@ -129,7 +118,6 @@
             font-size: 0.95rem; outline: none; transition: 0.3s;
         }
         .input-group input:focus { border-color: #4e54c8; }
-
         .status-msg-box {
             font-size: 0.8rem; padding: 10px; margin: 10px 15px;
             background: #e3f2fd; border-radius: 8px; color: #1565c0;
@@ -186,20 +174,17 @@
             font-size: 1.1rem; text-align: right; margin-bottom: 10px; outline: none; font-weight: bold;
         }
         .payment-input:focus { border-color: #4e54c8; }
-        
         .quick-pay-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
         .quick-pay-btn {
             padding: 8px; border: 1px solid #4e54c8; border-radius: 8px;
             background: white; color: #4e54c8; font-size: 0.8rem; font-weight: 700; cursor: pointer;
         }
         .quick-pay-btn.exact { background: #4e54c8; color: white; border: none; grid-column: span 3; }
-        
         .change-display {
             text-align: center; padding: 8px; background: #e8f5e9;
             border-radius: 8px; margin-top: 10px; font-weight: 700; color: #27ae60; display: none;
         }
         .change-display.short { background: #ffebee; color: #e74c3c; }
-
         .action-buttons { display: flex; gap: 10px; padding: 0 15px 20px; }
         .btn {
             flex: 1; padding: 12px; border: none; border-radius: 12px;
@@ -222,13 +207,15 @@
             width: 100%; max-width: 400px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             animation: popUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            max-height: 85vh; overflow-y: auto;
         }
         @keyframes popUp { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .modal-header { display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         .close-modal { background: none; border: none; font-size: 1.5rem; color: #999; cursor: pointer; }
-        .form-group { margin-bottom: 15px; }
+        .form-group { margin-bottom: 12px; }
         .form-group label { display: block; margin-bottom: 5px; font-size: 0.85rem; color: #666; font-weight: 600; }
         .form-group input { width: 100%; padding: 10px; border: 2px solid #e0e0e0; border-radius: 8px; font-size: 1rem; }
+        .form-group .input-hint { font-size: 0.7rem; color: #999; margin-top: 2px; }
         .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
 
         /* --- SETTINGS & REPORTS --- */
@@ -245,15 +232,26 @@
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
             color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; text-align: center;
         }
-        .report-list { max-height: 250px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+        .report-row-split {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.3);
+        }
+        
+        .report-list { max-height: 300px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
         .report-item { 
             padding: 10px; border-bottom: 1px solid #eee; font-size: 0.85rem; 
-            word-break: break-word; /* Agar nama panjang turun ke bawah */
+            word-break: break-word; 
         }
         .report-item:last-child { border-bottom: none; }
+        
+        /* Detail item dalam laporan */
         .report-detail-items {
             font-size: 0.8rem; color: #555; margin-top: 4px; 
             padding-left: 10px; border-left: 3px solid #4e54c8;
+        }
+        .report-item-profit {
+            color: #27ae60; font-weight: 600; font-size: 0.75rem;
+            display: inline-block; margin-left: 5px;
         }
 
         /* --- RECEIPT --- */
@@ -275,7 +273,6 @@
         }
         .notification.show { opacity: 1; top: 30px; }
 
-        /* --- UTILS --- */
         .hidden { display: none !important; }
         .backup-btn { width: 100%; padding: 10px; margin-bottom: 8px; border: 1px solid #4e54c8; border-radius: 8px; background: white; color: #4e54c8; cursor: pointer; font-weight: 600; }
         
@@ -291,7 +288,7 @@
         <div class="header">
             <div>
                 <h1>Kasir Scan Pro</h1>
-                <p>QR/Barcode & Inventory</p>
+                <p>QR/Barcode & Laba Rugi</p>
             </div>
             <button class="settings-btn" onclick="openSettings()">⚙️</button>
         </div>
@@ -304,20 +301,17 @@
             </div>
         </div>
 
-        <!-- Scanner Section (Updated) -->
+        <!-- Scanner Section -->
         <div class="scanner-wrapper">
             <div class="scan-status-msg" id="scanStatusMsg">Kamera non-aktif</div>
-            
             <div id="reader-wrapper">
                 <div id="reader"></div>
-                <!-- Scan Effects -->
                 <div class="scan-line hidden" id="scanLine"></div>
                 <div class="corner tl"></div>
                 <div class="corner tr"></div>
                 <div class="corner bl"></div>
                 <div class="corner br"></div>
             </div>
-
             <div class="scanner-controls">
                 <button class="btn btn-primary" id="startBtn" onclick="startScanner()" style="background:#4e54c8; color:white; padding:8px 20px; border-radius:20px;">📷 Mulai Scan</button>
                 <button class="btn btn-danger hidden" id="stopBtn" onclick="stopScanner()" style="padding:8px 20px; border-radius:20px;">⏹ Stop</button>
@@ -410,6 +404,12 @@
                 <label>Harga Jual (Rp)</label>
                 <input type="number" id="productPrice" placeholder="0">
             </div>
+            <!-- NEW: Cost Input -->
+            <div class="form-group">
+                <label>Harga Beli / Modal (Rp)</label>
+                <input type="number" id="productCost" placeholder="0 (Opsional)">
+                <div class="input-hint">Diperlukan untuk menghitung keuntungan.</div>
+            </div>
             <div class="modal-actions">
                 <button class="btn btn-danger" style="flex:1" onclick="closeModal('productModal')">Batal</button>
                 <button class="btn btn-success" style="flex:1" onclick="saveProductFromModal()">Simpan</button>
@@ -434,6 +434,11 @@
             <div class="form-group">
                 <label>Harga Jual (Rp)</label>
                 <input type="number" id="addProductPrice">
+            </div>
+            <!-- NEW: Cost Input -->
+            <div class="form-group">
+                <label>Harga Beli / Modal (Rp)</label>
+                <input type="number" id="addProductCost" placeholder="0">
             </div>
             <div class="modal-actions">
                 <button class="btn btn-danger" style="flex:1" onclick="closeModal('addProductModal')">Batal</button>
@@ -474,12 +479,24 @@
                 </div>
             </div>
 
-            <!-- Tab Reports (UPDATED WITH ITEM DETAILS) -->
+            <!-- Tab Reports (UPDATED WITH PROFIT) -->
             <div id="tab-reports" class="settings-content">
                 <div class="report-card">
                     <div style="font-size:0.8rem; opacity:0.9">Omset Bulan Ini</div>
                     <div style="font-size:1.5rem; font-weight:bold" id="monthlyReportTotal">Rp 0</div>
                     <div style="font-size:0.75rem" id="monthlyReportCount">0 Transaksi</div>
+                    
+                    <!-- Profit Section -->
+                    <div class="report-row-split">
+                        <div>
+                            <div style="font-size:0.7rem; opacity:0.8">Total Laba Bersih</div>
+                            <div style="font-weight:bold; font-size:1.2rem;" id="monthlyReportProfit">Rp 0</div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size:0.7rem; opacity:0.8">Margin Rata-rata</div>
+                            <div style="font-weight:bold;" id="monthlyReportMargin">0%</div>
+                        </div>
+                    </div>
                 </div>
                 <div style="font-size:0.75rem; color:#888; margin-bottom:5px;">Riwayat Transaksi Bulan Ini:</div>
                 <div class="report-list" id="reportListContainer">
@@ -526,7 +543,7 @@
     <div id="notification" class="notification">Pesan</div>
 
     <script>
-        // --- AUDIO SYSTEM (Beep Effect) ---
+        // --- AUDIO SYSTEM (MODERN SCANNER BEEP) ---
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         const audioCtx = new AudioContext();
 
@@ -534,15 +551,15 @@
             if (audioCtx.state === 'suspended') audioCtx.resume();
             const oscillator = audioCtx.createOscillator();
             const gainNode = audioCtx.createGain();
-            oscillator.type = 'square';
-            oscillator.frequency.setValueAtTime(1800, audioCtx.currentTime);
-            oscillator.frequency.exponentialRampToValueAtTime(800, audioCtx.currentTime + 0.1);
-            gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(2400, audioCtx.currentTime); 
+            oscillator.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.15);
+            gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
             oscillator.connect(gainNode);
             gainNode.connect(audioCtx.destination);
             oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.1);
+            oscillator.stop(audioCtx.currentTime + 0.15);
         }
 
         // --- DATA & STATE ---
@@ -571,10 +588,11 @@
 
             if (p) productDatabase = JSON.parse(p);
             else {
+                // Default Data with Cost
                 productDatabase = {
-                    '8998866200313': { name: 'Indomie Goreng', price: 3500 },
-                    '8996001600269': { name: 'Aqua 600ml', price: 4000 },
-                    '8999999526452': { name: 'Teh Pucuk 350ml', price: 4000 }
+                    '8998866200313': { name: 'Indomie Goreng', price: 3500, cost: 3000 },
+                    '8996001600269': { name: 'Aqua 600ml', price: 4000, cost: 3000 },
+                    '8999999526452': { name: 'Teh Pucuk 350ml', price: 4000, cost: 3500 }
                 };
             }
             if (s) appSettings = JSON.parse(s);
@@ -587,7 +605,6 @@
             localStorage.setItem('kasir_history', JSON.stringify(salesHistory));
         }
 
-        // --- UTILS ---
         function formatRupiah(num) {
             return 'Rp ' + Math.round(num).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
         }
@@ -636,14 +653,12 @@
             try {
                 html5QrCode = new Html5Qrcode("reader");
                 const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-                
                 await html5QrCode.start(
                     { facingMode: "environment" }, 
                     config, 
                     onScanSuccess, 
                     (err) => { }
                 );
-                
                 isScanning = true;
                 document.getElementById('startBtn').classList.add('hidden');
                 document.getElementById('stopBtn').classList.remove('hidden');
@@ -702,8 +717,11 @@
         function addToCart(code) {
             const product = productDatabase[code];
             const existing = cart.find(i => i.code === code);
+            // Ensure cost is saved in cart for later calculation
+            const itemCost = product.cost || 0;
+            
             if (existing) existing.qty++;
-            else cart.push({ code: code, name: product.name, price: product.price, qty: 1 });
+            else cart.push({ code: code, name: product.name, price: product.price, qty: 1, cost: itemCost });
             renderCart();
         }
 
@@ -734,12 +752,14 @@
                 document.getElementById('modalCode').textContent = code;
                 document.getElementById('productName').value = '';
                 document.getElementById('productPrice').value = '';
+                document.getElementById('productCost').value = ''; // Reset cost
                 openModal('productModal');
                 setTimeout(() => document.getElementById('productName').focus(), 100);
             } else {
                 document.getElementById('addModalCode').textContent = code;
                 document.getElementById('addProductName').value = '';
                 document.getElementById('addProductPrice').value = '';
+                document.getElementById('addProductCost').value = '';
                 openModal('addProductModal');
                 setTimeout(() => document.getElementById('addProductName').focus(), 100);
             }
@@ -748,9 +768,11 @@
         function saveProductFromModal() {
             const name = document.getElementById('productName').value.trim();
             const price = parseInt(document.getElementById('productPrice').value);
+            const cost = parseInt(document.getElementById('productCost').value) || 0; // Handle empty cost
+
             if (!name || !price) return showNotification('Isi data lengkap', 'error');
             
-            productDatabase[tempCode] = { name, price };
+            productDatabase[tempCode] = { name, price, cost };
             saveData();
             addToCart(tempCode);
             closeModal('productModal');
@@ -761,9 +783,11 @@
         function saveNewProduct() {
             const name = document.getElementById('addProductName').value.trim();
             const price = parseInt(document.getElementById('addProductPrice').value);
+            const cost = parseInt(document.getElementById('addProductCost').value) || 0;
+
             if (!name || !price) return showNotification('Isi data lengkap', 'error');
 
-            productDatabase[tempCode] = { name, price };
+            productDatabase[tempCode] = { name, price, cost };
             saveData();
             closeModal('addProductModal');
             playBeep();
@@ -877,13 +901,18 @@
             const pay = parseFloat(document.getElementById('paymentAmount').value) || 0;
             if (pay < total) return showNotification('Uang kurang!', 'error');
 
+            // Calculate Cost for this transaction at the moment of sale
+            // We use the cost stored in the cart item (which came from db at add time)
+            const totalCost = cart.reduce((sum, item) => sum + ((item.cost || 0) * item.qty), 0);
+
             const tx = {
                 id: 'TX-' + Date.now(),
                 date: new Date().toISOString(),
-                items: [...cart],
+                items: [...cart], // Items include cost here
                 total: total,
                 pay: pay,
-                change: pay - total
+                change: pay - total,
+                totalCost: totalCost // Save summary cost
             };
             salesHistory.unshift(tx);
             saveData();
@@ -960,7 +989,8 @@
             const curMonth = now.getMonth();
             const curYear = now.getFullYear();
             
-            let monthlyTotal = 0;
+            let monthlyRevenue = 0;
+            let monthlyCost = 0;
             let monthlyCount = 0;
             
             const monthlyTx = salesHistory.filter(tx => {
@@ -969,23 +999,49 @@
             });
 
             monthlyTx.forEach(tx => {
-                monthlyTotal += tx.total;
+                monthlyRevenue += tx.total;
+                // Use saved cost from transaction history or calculate from items if missing (old data)
+                if (tx.totalCost !== undefined) {
+                    monthlyCost += tx.totalCost;
+                } else {
+                    // Fallback for old data structure
+                    monthlyCost += tx.items.reduce((sum, i) => sum + ((i.cost || 0) * i.qty), 0);
+                }
                 monthlyCount++;
             });
 
-            document.getElementById('monthlyReportTotal').textContent = formatRupiah(monthlyTotal);
+            const monthlyProfit = monthlyRevenue - monthlyCost;
+            const margin = monthlyRevenue > 0 ? Math.round((monthlyProfit / monthlyRevenue) * 100) : 0;
+
+            document.getElementById('monthlyReportTotal').textContent = formatRupiah(monthlyRevenue);
             document.getElementById('monthlyReportCount').textContent = monthlyCount + ' Transaksi';
+            document.getElementById('monthlyReportProfit').textContent = formatRupiah(monthlyProfit);
+            document.getElementById('monthlyReportMargin').textContent = margin + '%';
 
             const list = document.getElementById('reportListContainer');
             if (monthlyTx.length === 0) {
                 list.innerHTML = '<div style="padding:15px; text-align:center; color:#999;">Tidak ada data bulan ini.</div>';
             } else {
                 list.innerHTML = monthlyTx.map(tx => {
-                    // Buat string daftar barang: "Indomie (x2), Aqua (x1)"
-                    const itemDetails = tx.items.map(i => `${i.name} (x${i.qty})`).join(', ');
                     const dateObj = new Date(tx.date);
                     const dateStr = dateObj.toLocaleDateString('id-ID', {day: 'numeric', month:'short'});
                     const timeStr = dateObj.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+                    
+                    // Generate Item Details with Profit
+                    let itemsHtml = tx.items.map(i => {
+                        const itemCost = i.cost || 0;
+                        const itemProfit = (i.price - itemCost) * i.qty;
+                        // Only show profit if cost was recorded
+                        if (itemCost > 0) {
+                            return `<div>${i.name} (x${i.qty}) <span class="report-item-profit">+${formatRupiah(itemProfit)}</span></div>`;
+                        } else {
+                            return `<div>${i.name} (x${i.qty})</div>`;
+                        }
+                    }).join('');
+
+                    // Calculate Transaction Total Profit
+                    const txCost = tx.totalCost || tx.items.reduce((s, i) => s + ((i.cost || 0) * i.qty), 0);
+                    const txProfit = tx.total - txCost;
 
                     return `
                         <div class="report-item">
@@ -994,7 +1050,8 @@
                                 <span style="font-weight:bold; color:#4e54c8;">${formatRupiah(tx.total)}</span>
                             </div>
                             <div class="report-detail-items">
-                                ${itemDetails}
+                                ${itemsHtml}
+                                ${txCost > 0 ? `<div style="margin-top:4px; font-weight:bold; color:#27ae60; border-top:1px dashed #ddd; padding-top:2px;">Total Laba Tx: ${formatRupiah(txProfit)}</div>` : ''}
                             </div>
                         </div>
                     `;
@@ -1041,13 +1098,15 @@
         }
 
         function exportCSV() {
-            let csv = 'Tanggal,Waktu,Total,Item List\n';
+            let csv = 'Tanggal,Waktu,Total,Profit,Item List\n';
             salesHistory.forEach(tx => {
                 const d = new Date(tx.date);
                 const dateStr = d.toLocaleDateString('id-ID');
                 const timeStr = d.toLocaleTimeString('id-ID');
                 const items = tx.items.map(i=>`${i.name} (x${i.qty})`).join('; ');
-                csv += `"${dateStr}","${timeStr}",${tx.total},"${items}"\n`;
+                const txCost = tx.totalCost || tx.items.reduce((s, i) => s + ((i.cost || 0) * i.qty), 0);
+                const profit = tx.total - txCost;
+                csv += `"${dateStr}","${timeStr}",${tx.total},${profit},"${items}"\n`;
             });
             const blob = new Blob([csv], {type: 'text/csv'});
             const url = URL.createObjectURL(blob);
