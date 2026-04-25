@@ -3,16 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <!-- Link ke Manifest agar bisa diinstall di HP -->
+    <!-- Link ke Manifest agar bisa diinstall di HP -->
     <link rel="manifest" href="manifest.json" />
-     <title>Kasir Pro Offline</title>
+    <title>Kasir Pro Offline</title>
 
-     
     <!-- Warna tema browser (Address bar) -->
     <meta name="theme-color" content="#2563eb" />
 
-
-    
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
@@ -133,10 +130,19 @@
       }
       .btn-hapus {
         background: var(--merah) !important;
-        padding: 6px 12px !important;
+        padding: 4px 8px !important;
         width: auto !important;
-        font-size: 13px !important;
+        font-size: 12px !important;
       }
+      /* Tombol Edit Khusus untuk tabel struk */
+      .btn-edit-struk {
+        background: #0ea5e9 !important; /* Warna biru langit */
+        padding: 4px 8px !important;
+        width: auto !important;
+        font-size: 12px !important;
+        margin-right: 4px;
+      }
+
       .btn-edit {
         background: #0284c7 !important;
         padding: 6px 12px !important;
@@ -188,6 +194,12 @@
         background: #f1f5f9;
         font-weight: 600;
         font-size: 13px;
+      }
+      /* Kolom aksi di struk agar rapi */
+      td:last-child {
+        white-space: nowrap;
+        width: 80px;
+        text-align: right;
       }
       .total-box {
         background: var(--biru);
@@ -509,7 +521,7 @@
     <div class="app">
       <div class="header no-print">
         <h1>💰 KASIR PRO OFFLINE</h1>
-        <small>Scan cepat, pantau keuntungan otomatis</small>
+        <small>Scan cepat, edit keranjang, pantau keuntungan otomatis</small>
       </div>
 
       <div class="tabs no-print">
@@ -593,7 +605,7 @@
                     <th>Qty</th>
                     <th>Jual</th>
                     <th>Sub</th>
-                    <th></th>
+                    <th>Aksi</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -1351,6 +1363,11 @@
         }
         let diStruk = struk.find((s) => s.barcode === barcode);
         if (diStruk) {
+          // Cek stok lagi jika nambah ke yang sudah ada
+          if (barang.stok < diStruk.qty + qty) {
+             alert("Stok kurang! Sisa: " + barang.stok);
+             return;
+          }
           diStruk.qty += qty;
         } else {
           struk.push({
@@ -1363,6 +1380,43 @@
           });
         }
         beep();
+        renderStruk();
+      }
+
+      // ===== EDIT JUMLAH DI KERANJANG =====
+      function editItemStruk(index) {
+        let item = struk[index];
+        if (!item) return;
+
+        // Cek stok saat ini di database (nyata)
+        let barangDb = dbBarang.find((b) => b.barcode === item.barcode);
+        let stokNyata = barangDb ? barangDb.stok : 0;
+
+        // Hitung sisa stok yang tersedia (stok nyata - yang sudah ada di keranjang)
+        // Karena item di keranjang akan diupdate, kita anggap sementara item tersebut 'dikembalikan' ke stok
+        // jadi stok tersedia = stok nyata.
+        // Namun jika user memasukkan angka yang lebih besar dari stok nyata, tolak.
+        
+        let inputQty = prompt(
+          `Edit jumlah untuk: ${item.nama}\nStok Tersedia: ${stokNyata}`, 
+          item.qty
+        );
+
+        if (inputQty === null) return; // Batal
+
+        let qtyBaru = parseInt(inputQty);
+
+        if (isNaN(qtyBaru) || qtyBaru < 1) {
+          alert("Jumlah harus minimal 1");
+          return;
+        }
+
+        if (qtyBaru > stokNyata) {
+          alert(`Stok tidak mencukupi! Stok gudang saat ini: ${stokNyata}`);
+          return;
+        }
+
+        item.qty = qtyBaru;
         renderStruk();
       }
 
@@ -1384,7 +1438,14 @@
           let modalTotal = item.hargaBeli * item.qty;
           totalJual += subtotal;
           totalModal += modalTotal;
-          tbody.innerHTML += `<tr><td>${item.nama}</td><td>${item.qty}</td><td>${item.hargaJual.toLocaleString()}</td><td>${subtotal.toLocaleString()}</td><td><button class="btn-hapus" onclick="hapusItemStruk(${i})">X</button></td></tr>`;
+          
+          // Kolom aksi: tombol edit dan hapus
+          let btnAksi = `
+            <button class="btn-edit-struk" onclick="editItemStruk(${i})" title="Edit Jumlah">✏️</button>
+            <button class="btn-hapus" onclick="hapusItemStruk(${i})" title="Hapus">X</button>
+          `;
+
+          tbody.innerHTML += `<tr><td>${item.nama}</td><td>${item.qty}</td><td>${item.hargaJual.toLocaleString()}</td><td>${subtotal.toLocaleString()}</td><td>${btnAksi}</td></tr>`;
         });
 
         let laba = totalJual - totalModal;
@@ -1419,7 +1480,7 @@
 
         struk.forEach((s) => {
           let b = dbBarang.find((x) => x.barcode === s.barcode);
-          b.stok -= s.qty;
+          if (b) b.stok -= s.qty;
         });
 
         dbTransaksi.push({
@@ -1675,4 +1736,3 @@
     </script>
   </body>
 </html>
-
