@@ -514,7 +514,7 @@
       /* Style Khusus Canvas Chart */
       .chart-container {
         position: relative;
-        height: 350px; /* Tinggi diperbesar agar lebih jelas */
+        height: 350px;
         width: 100%;
         margin-top: 10px;
       }
@@ -787,7 +787,7 @@
 
           <!-- CARD CANVAS GRAFIK -->
           <div class="card" style="margin-top: 20px">
-            <h3>📊 Analisa Penjualan (Canvas Chart)</h3>
+            <h3>📉 Tren Penjualan (Grafik Garis)</h3>
             <div class="chart-container">
               <canvas id="chartLaporan"></canvas>
             </div>
@@ -1790,8 +1790,9 @@
           totalLaba.toLocaleString();
       }
 
+      // --- SCRIPT GRAFIK (LINE CHART) ---
       function updateChart() {
-        const ctx = document.getElementById('chartLaporan').getContext('2d');
+        // Ambil data transaksi hari ini
         let hariIni = new Date().toLocaleDateString("id-ID");
         let transaksiHariIni = dbTransaksi.filter((t) => t.waktu.includes(hariIni));
         
@@ -1801,47 +1802,57 @@
         }
 
         // Siapkan Data untuk Grafik
-        // Labels: Jam transaksi (misal 10:00, 11:00)
-        // Data: Omset per jam
+        // Kita kelompokkan transaksi berdasarkan JAM
         let dataPerJam = {};
         transaksiHariIni.forEach(t => {
-            // Ambil jam saja (format HH.MM atau HH:MM tergantung locale)
-            let jam = t.waktu.split(' ')[1] || t.waktu.split(' ')[2] || t.waktu; 
-            // Bersihkan format jam jika perlu
-            jam = jam.replace('.', ':'); 
+            // Ambil jam dari string waktu (contoh: "20/10/2023, 14.30.00")
+            let parts = t.waktu.split(', ');
+            let jamRaw = parts[1] || "";
             
-            if (!dataPerJam[jam]) {
-                dataPerJam[jam] = 0;
+            // Bersihkan titik jika ada (tergantung format locale browser)
+            let jamLabel = jamRaw.substring(0, 5); // Ambil HH.MM atau HH:MM
+
+            if (!dataPerJam[jamLabel]) {
+                dataPerJam[jamLabel] = 0;
             }
-            dataPerJam[jam] += t.totalJual;
+            dataPerJam[jamLabel] += t.totalJual;
         });
 
-        let labels = Object.keys(dataPerJam);
-        let dataOmset = Object.values(dataPerJam);
+        // Urutkan jam agar grafik berurutan kiri ke kanan
+        let labels = Object.keys(dataPerJam).sort();
+        let dataOmset = labels.map(l => dataPerJam[l]);
 
+        // Setup Chart.js
+        const ctx = document.getElementById('chartLaporan').getContext('2d');
+        
         chartInstance = new Chart(ctx, {
-            type: 'bar', // Gunakan 'bar' untuk visualisasi yang jelas
+            type: 'line', // Ganti ke Line Chart
             data: {
                 labels: labels,
                 datasets: [{
-                    label: 'Omset Penjualan (Rp)',
+                    label: 'Omset Penjualan',
                     data: dataOmset,
-                    backgroundColor: 'rgba(37, 99, 235, 0.6)', // Warna Biru transparan
+                    backgroundColor: 'rgba(37, 99, 235, 0.2)', // Warna Biru transparan untuk area
                     borderColor: 'rgba(37, 99, 235, 1)',
-                    borderWidth: 1,
-                    borderRadius: 4,
-                    maxBarThickness: 50
+                    borderWidth: 2,
+                    pointBackgroundColor: '#fff',
+                    pointBorderColor: 'rgba(37, 99, 235, 1)',
+                    pointRadius: 4,
+                    fill: true, // Aktifkan area fill
+                    tension: 0.4 // Efek lengkung (smooth curve)
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false, // Penting agar tidak gepeng
+                maintainAspectRatio: false, // Penting agar canvas tidak gepeng
                 plugins: {
                     legend: {
                         display: true,
                         position: 'top'
                     },
                     tooltip: {
+                        mode: 'index',
+                        intersect: false,
                         callbacks: {
                             label: function(context) {
                                 let label = context.dataset.label || '';
@@ -1865,8 +1876,8 @@
                         ticks: {
                            // Format angka sumbu Y agar tidak terlalu panjang (misal 1jt)
                            callback: function(value) {
-                               if(value >= 1000000) return (value/1000000) + 'jt';
-                               if(value >= 1000) return (value/1000) + 'rb';
+                               if(value >= 1000000) return (value/1000000) + ' Jt';
+                               if(value >= 1000) return (value/1000) + ' Rb';
                                return value;
                            }
                         }
