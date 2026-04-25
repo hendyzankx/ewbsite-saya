@@ -10,7 +10,12 @@
     <!-- Warna tema browser (Address bar) -->
     <meta name="theme-color" content="#2563eb" />
 
+    <!-- Library Scanner -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    
+    <!-- Library Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap"
       rel="stylesheet"
@@ -506,6 +511,14 @@
         border-color: var(--biru);
       }
 
+      /* Style Khusus Canvas Chart */
+      .chart-container {
+        position: relative;
+        height: 350px; /* Tinggi diperbesar agar lebih jelas */
+        width: 100%;
+        margin-top: 10px;
+      }
+
       @media print {
         .no-print,
         .tabs,
@@ -771,6 +784,15 @@
               🗑️ Hapus Laporan
             </button>
           </div>
+
+          <!-- CARD CANVAS GRAFIK -->
+          <div class="card" style="margin-top: 20px">
+            <h3>📊 Analisa Penjualan (Canvas Chart)</h3>
+            <div class="chart-container">
+              <canvas id="chartLaporan"></canvas>
+            </div>
+          </div>
+
           <div class="card" style="margin-top: 20px">
             <h3>Riwayat Transaksi</h3>
             <div style="overflow-x: auto">
@@ -838,6 +860,9 @@
       let isScanning = false;
       let debounceTimer = null;
       const SCAN_DELAY_MS = 1000;
+
+      // Variabel Chart
+      let chartInstance = null;
 
       // Variabel untuk dropdown pencarian manual
       let barangTerpilihCari = null;
@@ -1045,6 +1070,7 @@
         renderBarang();
         renderPilihBarang();
         renderLaporan();
+        updateChart(); // Update chart saat data berubah
       }
 
       function gantiTab(tab) {
@@ -1065,6 +1091,11 @@
         document.getElementById(tabId[tab]).classList.add("aktif");
         if (tab === "kasir")
           setTimeout(() => document.getElementById("scanInput").focus(), 100);
+        
+        // Jika pindah ke tab laporan, refresh chart
+        if (tab === 'laporan') {
+            updateChart();
+        }
       }
 
       function mulaiScanKamera(mode) {
@@ -1491,6 +1522,27 @@
         let bayar = parseInt(document.getElementById("bayar").value) || 0;
         if (bayar < totalJual) return alert("Uang bayar kurang!");
 
+        // --- OPTIMASI: CEGAH STOK MINUS (DOUBLE CHECK) ---
+        let stokMasalah = "";
+        
+        // Cek ulang stok FISIK di database sebelum mengurangi
+        for (let i = 0; i < struk.length; i++) {
+          let itemStruk = struk[i];
+          let barangDb = dbBarang.find((b) => b.barcode === itemStruk.barcode);
+          
+          if (!barangDb) {
+            stokMasalah += `❌ Barang hilang: ${itemStruk.nama}\n`;
+          } else if (barangDb.stok < itemStruk.qty) {
+            stokMasalah += `❌ Stok tidak cukup untuk ${itemStruk.nama}. Minta: ${itemStruk.qty}, Sisa: ${barangDb.stok}\n`;
+          }
+        }
+
+        if (stokMasalah !== "") {
+          alert("⛔ TRANSAKSI DIBATALKAN!\n\n" + stokMasalah + "\nSilakan periksa stok atau kurangi jumlah barang.");
+          return; // Batalkan transaksi
+        }
+
+        // Jika aman, lanjutkan pengurangan stok
         struk.forEach((s) => {
           let b = dbBarang.find((x) => x.barcode === s.barcode);
           if (b) b.stok -= s.qty;
@@ -1736,6 +1788,97 @@
           totalModal.toLocaleString();
         document.getElementById("labaHariIni").innerText =
           totalLaba.toLocaleString();
+      }
+
+      function updateChart() {
+        const ctx = document.getElementById('chartLaporan').getContext('2d');
+        let hariIni = new Date().toLocaleDateString("id-ID");
+        let transaksiHariIni = dbTransaksi.filter((t) => t.waktu.includes(hariIni));
+        
+        // Jika belum ada chart instance, buat baru
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        // Siapkan Data untuk Grafik
+        // Labels: Jam transaksi (misal 10:00, 11:00)
+        // Data: Omset per jam
+        let dataPerJam = {};
+        transaksiHariIni.forEach(t => {
+            // Ambil jam saja (format HH.MM atau HH:MM tergantung locale)
+            let jam = t.waktu.split(' ')[1] || t.waktu.split(' ')[2] || t.waktu; 
+            // Bersihkan format jam jika perlu
+            jam = jam.replace('.', ':'); 
+            
+            if (!dataPerJam[jam]) {
+                dataPerJam[jam] = 0;
+            }
+            dataPerJam[jam] += t.totalJual;
+        });
+
+        let labels = Object.keys(dataPerJam);
+        let dataOmset = Object.values(dataPerJam);
+
+        chartInstance = new Chart(ctx, {
+            type: 'bar', // Gunakan 'bar' untuk visualisasi yang jelas
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Omset Penjualan (Rp)',
+                    data: dataOmset,
+                    backgroundColor: 'rgba(37, 99, 235, 0.6)', // Warna Biru transparan
+                    borderColor: 'rgba(37, 99, 235, 1)',
+                    borderWidth: 1,
+                    borderRadius: 4,
+                    maxBarThickness: 50
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false, // Penting agar tidak gepeng
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(context.parsed.y);
+                                }
+                                return label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#f1f5f9'
+                        },
+                        ticks: {
+                           // Format angka sumbu Y agar tidak terlalu panjang (misal 1jt)
+                           callback: function(value) {
+                               if(value >= 1000000) return (value/1000000) + 'jt';
+                               if(value >= 1000) return (value/1000) + 'rb';
+                               return value;
+                           }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
       }
 
       function exportCSV() {
