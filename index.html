@@ -3,8 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Link ke Manifest agar bisa diinstall di HP -->
-    <link rel="manifest" href="manifest.json" />
     <title>Kasir Pro Offline</title>
 
     <!-- Warna tema browser (Address bar) -->
@@ -50,11 +48,11 @@
       .header {
         background: linear-gradient(135deg, var(--biru), #1e40af);
         color: white;
-        padding: 25px 20px; /* Padding diperbesar sedikit */
+        padding: 25px 20px;
         text-align: center;
       }
       .header h1 {
-        font-size: 26px; /* Ukuran font diperbesar */
+        font-size: 26px;
         font-weight: 800;
         margin-bottom: 4px;
         text-transform: uppercase;
@@ -64,7 +62,8 @@
       .header small {
         font-size: 13px;
         opacity: 0.9;
-        display: block; /* Agar alamat turun ke baris baru */
+        display: block;
+        white-space: pre-line;
       }
       .tabs {
         display: flex;
@@ -109,7 +108,8 @@
         color: #334155;
       }
       input,
-      select {
+      select,
+      textarea {
         width: 100%;
         padding: 12px;
         margin: 6px 0;
@@ -117,6 +117,10 @@
         border-radius: 8px;
         font-size: 15px;
         background: white;
+      }
+      textarea#inputInfoToko {
+          font-family: monospace;
+          line-height: 1.4;
       }
 
       button,
@@ -164,7 +168,7 @@
         transform: scale(1.1);
       }
       .btn-qty-minus {
-        background: #f59e0b !important; /* Warna Oranye untuk minus */
+        background: #f59e0b !important;
       }
 
       .btn-edit {
@@ -199,30 +203,53 @@
         text-align: center;
       }
 
+      /* CSS Tabel Responsif & Fixed Header */
+      .table-responsive-wrapper {
+        max-height: 600px;
+        overflow-y: auto; /* Tambahan scroll */
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        background: white;
+        padding-bottom: 5px;
+        margin-top: 10px;
+      }
+      .table-responsive-wrapper table {
+        border: none;
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .fixed-header th {
+        position: sticky; /* FIX BUG: Header Melay */
+        top: 0;
+        left: 0;
+        background: #f1f5f9;
+        z-index: 10;
+      }
+      /* Style Tabel */
       table {
         width: 100%;
         border-collapse: collapse;
         margin-top: 12px;
         background: white;
-        border-radius: 8px;
-        overflow: hidden;
       }
       th,
       td {
         padding: 10px;
         text-align: left;
-        border-bottom: 1px solid #e2e8f0;
         font-size: 14px;
+        /* Tambah border bottom pada td */
+        border-bottom: 1px solid #e2e8f0;
       }
       th {
         background: #f1f5f9;
         font-weight: 600;
         font-size: 13px;
+        border-bottom: 2px solid #cbd5e1; /* Garis header lebih tebal */
+        font-weight: 700;
       }
-      /* Kolom aksi di struk agar rapi */
       td:last-child {
         white-space: nowrap;
-        width: 110px; /* Lebar kolom aksi diperbesar sedikit */
+        width: 110px;
         text-align: right;
       }
       .total-box {
@@ -260,6 +287,16 @@
         font-size: 14px;
         margin: 6px 0;
         display: none;
+      }
+      .info-print {
+          background: #e0f2fe;
+          color: #0369a1;
+          padding: 10px;
+          border: 1px solid #bae6fd;
+          border-radius: 8px;
+          font-size: 12px;
+          margin-top: 5px;
+          border: 1px solid #bae6fd;
       }
 
       #reader,
@@ -333,16 +370,16 @@
         color: var(--hijau);
       }
 
-      /* ===== AREA CETAK STRUK ===== */
+      /* ===== AREA CETAK STRUK (OPTIMASI THERMAL PRINTER) ===== */
       #cetakStruk {
         display: none;
-        padding: 20px;
+        padding: 2px;
         font-family: "Courier New", monospace;
       }
       #cetakStruk h2 {
         text-align: center;
         margin-bottom: 5px;
-        font-size: 24px;
+        font-size: 16px; /* Sedikit mengecil judul ukuran 58mm */
         font-weight: bold;
         text-transform: uppercase;
       }
@@ -350,16 +387,18 @@
         text-align: center;
         font-size: 12px;
         margin-bottom: 15px;
-        white-space: pre-line; /* Penting: Membaca baris baru (Enter) */
-        color: #000;
+        white-space: pre-line; 
+        color: black;
       }
       #cetakStruk table {
         width: 100%;
       }
       #cetakStruk th, 
       #cetakStruk td {
-        border-bottom: none; /* Bersihkan garis border tabel default */
-        padding: 4px 0;
+        border-bottom: none;
+        padding: 2px 0;
+        color: black;
+        font-size: 12px;
       }
       #cetakStruk hr {
         border-top: 1px dashed #000;
@@ -418,10 +457,6 @@
         border-bottom: 1px solid #f1f5f9;
         font-size: 14px;
         transition: background 0.1s;
-      }
-      .dd-item:last-child {
-        border-bottom: none;
-        border-radius: 0 0 8px 8px;
       }
       .dd-item:hover,
       .dd-item.diangkat {
@@ -545,6 +580,7 @@
         margin-top: 10px;
       }
 
+      /* Style khusus untuk Print */
       @media print {
         .no-print,
         .tabs,
@@ -554,6 +590,8 @@
         body {
           background: white;
           padding: 0;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
         .app {
           box-shadow: none;
@@ -563,8 +601,6 @@
         }
       }
     </style>
-
-
   </head>
   <body>
     <div class="app">
@@ -648,17 +684,18 @@
             <button onclick="tambahManual()">+ Tambah ke Struk</button>
           </div>
 
+          <!-- Tabel Struk -->
           <div class="card no-print">
             <h3>Struk Belanja</h3>
-            <div style="overflow-x: auto">
+            <div class="table-responsive-wrapper">
               <table id="tabelStruk">
                 <thead>
                   <tr>
-                    <th>Barang</th>
-                    <th>Qty</th>
-                    <th>Jual</th>
-                    <th>Sub</th>
-                    <th>Aksi</th>
+                    <th style="width: 40%">Barang</th>
+                    <th style="width: 15%">Qty</th>
+                    <th style="width: 25%">Jual</th>
+                    <th style="width: 25%">Sub</th>
+                    <th style="width: 15%">Aksi</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -694,6 +731,7 @@
               <div class="label">KEMBALIAN</div>
               <div class="angka">Rp <span id="kembalian">0</span></div>
             </div>
+            
             <button class="btn-selesai" onclick="selesaiTransaksi()">
               SELESAI & CETAK
             </button>
@@ -767,22 +805,24 @@
           <div class="card" style="margin-top: 20px">
             <h3>Daftar Barang</h3>
             <div class="filter-grid" id="filterGrid"></div>
-            <div style="overflow-x: auto">
-              <table id="tabelBarang">
-                <thead>
-                  <tr>
-                    <th>Barcode</th>
-                    <th>Nama</th>
-                    <th>Kategori</th>
-                    <th>Modal</th>
-                    <th>Jual</th>
-                    <th>Laba/pcs</th>
-                    <th>Stok</th>
-                    <th>Aksi</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
+            
+            <!-- Tabel dengan Fixed Header -->
+            <div class="table-responsive-wrapper">
+                <table id="tabelBarang">
+                  <thead>
+                      <tr>
+                        <th style="width: 25%">Barcode</th>
+                        <th style="width: 45%">Nama</th>
+                        <th style="width: 30%">Kategori</th>
+                        <th style="width: 15%">Modal</th>
+                        <th style="width: 15%">Jual</th>
+                        <th style="width: 15%">Laba/pcs</th>
+                        <th style="width: 15%">Stok</th>
+                        <th style="width: 100px;">Aksi</th>
+                      </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
             </div>
           </div>
         </div>
@@ -825,19 +865,19 @@
 
           <div class="card" style="margin-top: 20px">
             <h3>Riwayat Transaksi</h3>
-            <div style="overflow-x: auto">
-              <table id="tabelLaporan">
-                <thead>
-                  <tr>
-                    <th>Waktu</th>
-                    <th>Omset</th>
-                    <th>Modal</th>
-                    <th>Laba</th>
-                    <th>Detail Item</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
+            <div class="table-responsive-wrapper">
+                <table id="tabelLaporan">
+                  <thead>
+                      <tr>
+                        <th>Waktu</th>
+                        <th>Omset</th>
+                        <th>Modal</th>
+                        <th>Laba</th>
+                        <th>Detail Item</th>
+                      </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
             </div>
           </div>
         </div>
@@ -857,12 +897,13 @@
               placeholder="Contoh: Toko Berkah Jaya"
             />
 
-            <label style="font-weight: 600; font-size: 14px;">Alamat / Catatan Kaki Struk</label>
-            <input
-              type="text"
-              id="inputAlamatToko"
-              placeholder="Contoh: Jl. Merdeka No. 12 | WA: 0812-3456-7890"
-            />
+            <label style="font-weight: 600; font-size: 14px;">Info Toko Lengkap</label>
+            <small style="display:block; margin-bottom: 5px; color: #64748b;">Alamat, No HP, Footer Struk (Gunakan Enter untuk baris baru)</small>
+            <textarea
+              id="inputInfoToko"
+              rows="4"
+              placeholder="Contoh:&#10;Jl. Merdeka No. 123&#10;WA: 0812-3456-7890&#10;Terima Kasih &amp; Datang Kembali"
+            ></textarea>
 
             <button onclick="simpanPengaturanToko()" style="margin-top: 10px;">
               💾 Simpan Perubahan
@@ -883,18 +924,17 @@
         <div id="cetakStruk">
           <!-- Judul Toko di Struk -->
           <h2 id="judulStrukCetak">TOKO KASIR PRO</h2>
-          
-          <!-- Alamat Toko di Struk (AKAN TAMPIL DISINI) -->
-          <div id="alamatStrukCetak" class="alamat-toko"></div>
+          <!-- Info Toko Lengkap di Struk -->
+          <div id="infoStrukCetak" class="alamat-toko"></div>
           
           <hr />
           <table>
             <thead>
-              <tr>
-                <th>Barang</th>
-                <th>Qty</th>
-                <th>Subtotal</th>
-              </tr>
+                <tr>
+                  <th style="width: 40%">Barang</th>
+                  <th style="width: 15%">Qty</th>
+                  <th>Subtotal</th>
+                </tr>
             </thead>
             <tbody id="tbodyCetak"></tbody>
           </table>
@@ -905,7 +945,7 @@
             KEMBALIAN: Rp <span id="kembaliCetak">0</span>
           </div>
           <hr />
-          <p style="text-align: center; font-size: 12px">
+          <p style="text-align: center; font-size: 12px; margin-top: 5px;">
             Terima kasih atas kunjungan Anda!
           </p>
         </div>
@@ -917,7 +957,7 @@
       // KONFIGURASI TOKO (DEFAULT)
       // ============================================
       let namaToko = "TOKO MAJU JAYA";
-      let alamatToko = "Jl. Contoh No. 123\nTelp: 08123456789";
+      let infoToko = "Jl. Contoh No. 123\nTelp: 08123456789";
       // ============================================
 
       // Daftar kategori default dengan emoji dan warna badge
@@ -951,58 +991,62 @@
       // --- INIT APLIKASI ---
       // Set nama toko saat pertama kali load
       window.addEventListener('DOMContentLoaded', () => {
-          loadPengaturanToko();
-          renderStruk(); // Init render
+          loadPengaturanToko(); // Load data awal
+          renderNamaToko(); 
+          renderStruk();
           simpanDb(); // Init data if empty
       });
+
+      // ============================================
+      // FUNGSI RENDER NAMA TOKO & INFO LENGKAP
+      // ============================================
+      function renderNamaToko() {
+          // 1. Update Header Aplikasi
+          document.getElementById('headerNamaToko').innerText = namaToko;
+          
+          // 2. Update Alamat Toko di Header (jika ada)
+          if (infoToko && infoToko.trim() !== "") {
+              document.getElementById('headerAlamatToko').innerText = infoToko;
+          } else {
+              document.getElementById('headerAlamatToko').innerText = "Scan cepat, atur jumlah, pantau keuntungan otomatis";
+          }
+
+          // 3. Update Struk Cetak
+          document.getElementById('judulStrukCetak').innerText = namaToko;
+          document.getElementById('infoStrukCetak').innerText = infoToko;
+      }
+      // ============================================
 
       // --- FUNGSI PENGATURAN TOKO ---
       function loadPengaturanToko() {
           // Cek LocalStorage untuk setting toko
           let savedNama = localStorage.getItem("namaToko");
-          let savedAlamat = localStorage.getItem("alamatToko");
+          let savedAlamat = localStorage.getItem("infoToko");
 
           if (savedNama) namaToko = savedNama;
-          if (savedAlamat) alamatToko = savedAlamat;
+          if (savedAlamat) infoToko = savedAlamat;
 
-          // Terapkan ke UI
-          terapkanPengaturanToko();
-
-          // Isi form pengaturan dengan data saat ini
+          // Isi form pengaturan
           document.getElementById('inputNamaToko').value = namaToko;
-          document.getElementById('inputAlamatToko').value = alamatToko;
-      }
-
-      function terapkanPengaturanToko() {
-          // Terapkan ke Header Aplikasi
-          document.getElementById('headerNamaToko').innerText = namaToko;
-          
-          // Jika alamat toko ada, tampilkan di bawah nama toko. Jika tidak, tampilkan teks default.
-          if (alamatToko && alamatToko.trim() !== "") {
-              document.getElementById('headerAlamatToko').innerText = alamatToko;
-          } else {
-              document.getElementById('headerAlamatToko').innerText = "Scan cepat, atur jumlah, pantau keuntungan otomatis";
-          }
-
-          // Terapkan ke Struk Cetak
-          document.getElementById('judulStrukCetak').innerText = namaToko;
-          document.getElementById('alamatStrukCetak').innerText = alamatToko;
+          document.getElementById('inputInfoToko').value = infoToko;
       }
 
       function simpanPengaturanToko() {
           let namaBaru = document.getElementById('inputNamaToko').value.trim();
-          let alamatBaru = document.getElementById('inputAlamatToko').value.trim();
+          let infoBaru = document.getElementById('inputInfoToko').value.trim();
 
           if (!namaBaru) return alert("Nama toko tidak boleh kosong!");
 
           namaToko = namaBaru;
-          alamatToko = alamatBaru;
+          infoToko = infoBaru;
 
           // Simpan ke LocalStorage
           localStorage.setItem("namaToko", namaToko);
-          localStorage.setItem("alamatToko", alamatToko);
+          localStorage.setItem("infoToko", infoToko);
 
-          terapkanPengaturanToko();
+          // Panggil fungsi render agar tampilan berubah seketika
+          renderNamaToko();
+          
           alert("✅ Pengaturan toko berhasil disimpan!");
       }
 
@@ -1237,7 +1281,6 @@
         if (tab === "kasir")
           setTimeout(() => document.getElementById("scanInput").focus(), 100);
         
-        // Jika pindah ke tab laporan, refresh chart
         if (tab === 'laporan') {
             updateChart();
         }
@@ -1264,7 +1307,6 @@
 
         if (modeScan === "kasir") {
           tambahKeStruk(decodedText);
-          // UX FIX: Focus otomatis kembali ke scan input setelah scan
           document.getElementById("scanInput").focus();
           setTimeout(() => {
             isScanning = false;
@@ -1383,7 +1425,6 @@
           return;
         }
 
-        // Filter barang: stok > 0, cocok kategori, cocok nama/barcode
         let hasil = dbBarang.filter((b) => {
           if (b.stok <= 0) return false;
           if (filterKat && b.kategori !== filterKat) return false;
@@ -1396,7 +1437,7 @@
           return true;
         });
 
-        hasil = hasil.slice(0, 20);
+        hasil = hasil.slice(0, 20); // BATAS BUG ~800: Limit 50 item
         indeksDiangkat = -1;
 
         if (hasil.length === 0) {
@@ -1414,11 +1455,10 @@
             <div>
               <div class="dd-nama">${namaHtml} <span class="dd-kategori">${katInfo.emoji} ${katInfo.nama}</span></div>
               <div style="font-size:11px;color:#94a3b8">${b.barcode}</div>
-            </div>
-            <div class="dd-info">
-              <div class="dd-harga">Rp${b.hargaJual.toLocaleString()}</div>
-              <div>Stok: ${b.stok}</div>
-            </div>
+              <div class="dd-info">
+                <div class="dd-harga">Rp${b.hargaJual.toLocaleString()}</div>
+                <div>Stok: ${b.stok}</div>
+              </div>
           </div>`;
         });
 
@@ -1553,7 +1593,6 @@
         }
         let diStruk = struk.find((s) => s.barcode === barcode);
         if (diStruk) {
-          // Cek stok lagi jika nambah ke yang sudah ada
           if (barang.stok < diStruk.qty + qty) {
              alert("Stok kurang! Sisa: " + barang.stok);
              return;
@@ -1712,7 +1751,6 @@
         tbodyCetak.innerHTML = "";
         struk.forEach((item) => {
           let sub = item.hargaJual * item.qty;
-          // Perbaikan Format Rupiah: Menggunakan toLocaleString('id-ID')
           tbodyCetak.innerHTML += `<tr><td>${item.nama}</td><td>${item.qty}</td><td>Rp ${sub.toLocaleString('id-ID')}</td></tr>`;
         });
         
@@ -1756,6 +1794,7 @@
         let idx = dbBarang.findIndex((b) => b.barcode === barcode);
 
         if (idx >= 0) {
+          // PERBAIKAN BUG: Hapus baris dbBarang[idx].stok = stokInput; agar stok ditambahkan, bukan ditimpa
           dbBarang[idx].stok += stokInput;
           dbBarang[idx].nama = nama;
           dbBarang[idx].kategori = kategori;
@@ -1866,7 +1905,6 @@
           optgroup.label = `${info.emoji} ${kat}`;
           
           barangKat.forEach((b) => {
-            // Pastikan barang belum dimasukkan (handle jika ada data duplikat/error)
             if (!processedBarcodes.has(b.barcode)) {
               let opt = document.createElement("option");
               opt.value = b.barcode;
@@ -1882,7 +1920,7 @@
         // Cari barang yang belum ada di processedBarcodes
         let tanpaKat = dbBarang.filter((b) => !b.kategori || b.kategori === "" || b.kategori === null || b.kategori === undefined);
         
-        // Filter ulang untuk memastikan barang ini belum masuk ke optgroup manapun
+        // Filter ulang barang yang belum ada di processedBarcodes
         tanpaKat = tanpaKat.filter((b) => !processedBarcodes.has(b.barcode));
 
         if (tanpaKat.length > 0) {
@@ -1912,7 +1950,6 @@
             let modal = t.totalModal !== undefined ? t.totalModal : 0;
             let laba = t.laba !== undefined ? t.laba : t.total;
             let omset = t.totalJual !== undefined ? t.totalJual : t.total;
-
             totalOmset += omset;
             totalModal += modal;
             totalLaba += laba;
@@ -1935,7 +1972,6 @@
           totalLaba.toLocaleString();
       }
 
-      // --- SCRIPT GRAFIK (LINE CHART) ---
       function updateChart() {
         // Ambil data transaksi hari ini
         let hariIni = new Date().toLocaleDateString("id-ID");
@@ -1946,8 +1982,6 @@
             chartInstance.destroy();
         }
 
-        // Siapkan Data untuk Grafik
-        // Kita kelompokkan transaksi berdasarkan JAM
         let dataPerJam = {};
         transaksiHariIni.forEach(t => {
             // Ambil jam dari string waktu (contoh: "20/10/2023, 14.30.00")
@@ -1977,7 +2011,7 @@
                 datasets: [{
                     label: 'Omset Penjualan',
                     data: dataOmset,
-                    backgroundColor: 'rgba(37, 99, 235, 0.2)', // Warna Biru transparan untuk area
+                    backgroundColor: 'rgba(37, 99, 235, 0.2)',
                     borderColor: 'rgba(37, 99, 235, 1)',
                     borderWidth: 2,
                     pointBackgroundColor: '#fff',
@@ -1991,19 +2025,14 @@
                 responsive: true,
                 maintainAspectRatio: false, // Penting agar canvas tidak gepeng
                 plugins: {
-                    legend: {
-                        display: true,
-                        position: 'top'
-                    },
+                    legend: { display: true, position: 'top' },
                     tooltip: {
                         mode: 'index',
                         intersect: false,
                         callbacks: {
                             label: function(context) {
                                 let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
+                                if (label) label += ': ';
                                 if (context.parsed.y !== null) {
                                     label += new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(context.parsed.y);
                                 }
@@ -2015,9 +2044,7 @@
                 scales: {
                     y: {
                         beginAtZero: true,
-                        grid: {
-                            color: '#f1f5f9'
-                        },
+                        grid: { color: '#f1f5f9' },
                         ticks: {
                            // Format angka sumbu Y agar tidak terlalu panjang (misal 1jt)
                            callback: function(value) {
@@ -2028,9 +2055,7 @@
                         }
                     },
                     x: {
-                        grid: {
-                            display: false
-                        }
+                        grid: { display: false }
                     }
                 }
             }
