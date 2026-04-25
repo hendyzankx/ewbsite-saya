@@ -206,7 +206,7 @@
       /* CSS Tabel Responsif & Fixed Header */
       .table-responsive-wrapper {
         max-height: 600px;
-        overflow-y: auto; /* Tambahan scroll */
+        overflow-y: auto;
         border: 1px solid #e2e8f0;
         border-radius: 8px;
         background: white;
@@ -219,13 +219,12 @@
         border-collapse: collapse;
       }
       .fixed-header th {
-        position: sticky; /* FIX BUG: Header Melay */
+        position: sticky;
         top: 0;
         left: 0;
         background: #f1f5f9;
         z-index: 10;
       }
-      /* Style Tabel */
       table {
         width: 100%;
         border-collapse: collapse;
@@ -237,14 +236,13 @@
         padding: 10px;
         text-align: left;
         font-size: 14px;
-        /* Tambah border bottom pada td */
         border-bottom: 1px solid #e2e8f0;
       }
       th {
         background: #f1f5f9;
         font-weight: 600;
         font-size: 13px;
-        border-bottom: 2px solid #cbd5e1; /* Garis header lebih tebal */
+        border-bottom: 2px solid #cbd5e1;
         font-weight: 700;
       }
       td:last-child {
@@ -288,17 +286,7 @@
         margin: 6px 0;
         display: none;
       }
-      .info-print {
-          background: #e0f2fe;
-          color: #0369a1;
-          padding: 10px;
-          border: 1px solid #bae6fd;
-          border-radius: 8px;
-          font-size: 12px;
-          margin-top: 5px;
-          border: 1px solid #bae6fd;
-      }
-
+      
       #reader,
       #readerBarang {
         width: 100% !important;
@@ -370,40 +358,97 @@
         color: var(--hijau);
       }
 
-      /* ===== AREA CETAK STRUK (OPTIMASI THERMAL PRINTER) ===== */
-      #cetakStruk {
-        display: none;
-        padding: 2px;
-        font-family: "Courier New", monospace;
+      /* ===== MODAL PREVIEW STRUK ===== */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        visibility: hidden;
+        opacity: 0;
+        transition: opacity 0.3s;
       }
-      #cetakStruk h2 {
+      .modal-overlay.show {
+        visibility: visible;
+        opacity: 1;
+      }
+      .modal-box {
+        background: white;
+        width: 90%;
+        max-width: 400px;
+        max-height: 90vh;
+        overflow-y: auto;
+        border-radius: 12px;
+        padding: 20px;
+        position: relative;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      }
+      .modal-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+      }
+      .modal-actions button {
+        flex: 1;
+        font-size: 14px;
+        padding: 10px;
+        margin: 0;
+      }
+      /* Desain Kertas Struk di Modal */
+      .struk-preview {
+        background: #fff;
+        border: 1px dashed #ccc;
+        padding: 15px;
+        font-family: "Courier New", monospace;
+        color: black;
+        font-size: 12px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      }
+      .struk-preview h2 {
         text-align: center;
         margin-bottom: 5px;
-        font-size: 16px; /* Sedikit mengecil judul ukuran 58mm */
+        font-size: 16px;
         font-weight: bold;
         text-transform: uppercase;
       }
-      #cetakStruk .alamat-toko {
+      .struk-preview .alamat {
         text-align: center;
-        font-size: 12px;
         margin-bottom: 15px;
-        white-space: pre-line; 
-        color: black;
+        white-space: pre-line;
+        font-size: 11px;
       }
-      #cetakStruk table {
-        width: 100%;
-      }
-      #cetakStruk th, 
-      #cetakStruk td {
-        border-bottom: none;
-        padding: 2px 0;
-        color: black;
-        font-size: 12px;
-      }
-      #cetakStruk hr {
+      .struk-preview hr {
         border-top: 1px dashed #000;
         border-bottom: none;
         margin: 10px 0;
+      }
+      .struk-preview table {
+        margin: 0;
+        width: 100%;
+      }
+      .struk-preview th, 
+      .struk-preview td {
+        padding: 2px 0;
+        border: none;
+        text-align: left;
+        font-size: 12px;
+      }
+      .struk-preview .total-section {
+        text-align: right;
+        margin-top: 10px;
+        font-weight: bold;
+      }
+      .struk-preview .footer {
+        text-align: center;
+        margin-top: 15px;
+        font-size: 11px;
       }
 
       /* ===== Dropdown pencarian barang manual ===== */
@@ -584,7 +629,9 @@
       @media print {
         .no-print,
         .tabs,
-        .header {
+        .header,
+        .modal-overlay,
+        .modal-actions {
           display: none !important;
         }
         body {
@@ -596,9 +643,21 @@
         .app {
           box-shadow: none;
         }
+        /* Tampilkan elemen cetak struk yang disembunyikan */
         #cetakStruk {
           display: block !important;
         }
+        .modal-box {
+            box-shadow: none;
+            width: 100%;
+            max-width: none;
+            padding: 0;
+        }
+      }
+
+      /* Sembunyikan area cetak asli saat tidak print, kita pakai Modal untuk preview */
+      #cetakStruk {
+        display: none;
       }
     </style>
   </head>
@@ -919,37 +978,26 @@
             </div>
           </div>
         </div>
-
-        <!-- AREA CETAK STRUK -->
-        <div id="cetakStruk">
-          <!-- Judul Toko di Struk -->
-          <h2 id="judulStrukCetak">TOKO KASIR PRO</h2>
-          <!-- Info Toko Lengkap di Struk -->
-          <div id="infoStrukCetak" class="alamat-toko"></div>
-          
-          <hr />
-          <table>
-            <thead>
-                <tr>
-                  <th style="width: 40%">Barang</th>
-                  <th style="width: 15%">Qty</th>
-                  <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody id="tbodyCetak"></tbody>
-          </table>
-          <hr />
-          <div style="text-align: right; font-size: 20px; font-weight: bold">
-            TOTAL: Rp <span id="totalCetak">0</span><br />
-            BAYAR: Rp <span id="bayarCetak">0</span><br />
-            KEMBALIAN: Rp <span id="kembaliCetak">0</span>
-          </div>
-          <hr />
-          <p style="text-align: center; font-size: 12px; margin-top: 5px;">
-            Terima kasih atas kunjungan Anda!
-          </p>
-        </div>
       </div>
+    </div>
+
+    <!-- MODAL PREVIEW STRUK -->
+    <div id="modalStruk" class="modal-overlay">
+        <div class="modal-box">
+            <div class="struk-preview" id="modalStrukContent">
+                <!-- Konten Struk akan di-generate JS -->
+            </div>
+            <div class="modal-actions">
+                <button onclick="tutupModalStruk()" style="background:#64748b;">❌ Tutup</button>
+                <button onclick="copyStruk()" style="background:var(--oren);">📋 Copy</button>
+                <button onclick="cetakDariModal()" style="background:var(--biru);">🖨️ Cetak</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AREA CETAK STRUK (HIDDEN DEFAULT) -->
+    <div id="cetakStruk">
+      <!-- Konten asli untuk print fisik -->
     </div>
 
     <script>
@@ -989,44 +1037,34 @@
       let filterKategoriAktif = "";
 
       // --- INIT APLIKASI ---
-      // Set nama toko saat pertama kali load
       window.addEventListener('DOMContentLoaded', () => {
-          loadPengaturanToko(); // Load data awal
+          loadPengaturanToko();
           renderNamaToko(); 
           renderStruk();
-          simpanDb(); // Init data if empty
+          simpanDb(); 
       });
 
       // ============================================
       // FUNGSI RENDER NAMA TOKO & INFO LENGKAP
       // ============================================
       function renderNamaToko() {
-          // 1. Update Header Aplikasi
           document.getElementById('headerNamaToko').innerText = namaToko;
-          
-          // 2. Update Alamat Toko di Header (jika ada)
           if (infoToko && infoToko.trim() !== "") {
               document.getElementById('headerAlamatToko').innerText = infoToko;
           } else {
               document.getElementById('headerAlamatToko').innerText = "Scan cepat, atur jumlah, pantau keuntungan otomatis";
           }
-
-          // 3. Update Struk Cetak
-          document.getElementById('judulStrukCetak').innerText = namaToko;
-          document.getElementById('infoStrukCetak').innerText = infoToko;
       }
       // ============================================
 
       // --- FUNGSI PENGATURAN TOKO ---
       function loadPengaturanToko() {
-          // Cek LocalStorage untuk setting toko
           let savedNama = localStorage.getItem("namaToko");
           let savedAlamat = localStorage.getItem("infoToko");
 
           if (savedNama) namaToko = savedNama;
           if (savedAlamat) infoToko = savedAlamat;
 
-          // Isi form pengaturan
           document.getElementById('inputNamaToko').value = namaToko;
           document.getElementById('inputInfoToko').value = infoToko;
       }
@@ -1040,13 +1078,10 @@
           namaToko = namaBaru;
           infoToko = infoBaru;
 
-          // Simpan ke LocalStorage
           localStorage.setItem("namaToko", namaToko);
           localStorage.setItem("infoToko", infoToko);
 
-          // Panggil fungsi render agar tampilan berubah seketika
           renderNamaToko();
-          
           alert("✅ Pengaturan toko berhasil disimpan!");
       }
 
@@ -1112,7 +1147,7 @@
         simpanDb();
       }
 
-      // Migrasi data lama: tambah kategori jika belum ada
+      // Migrasi data lama
       let perluMigrasi = false;
       dbBarang.forEach((b) => {
         if (b.kategori === undefined || b.kategori === null) {
@@ -1130,8 +1165,6 @@
       });
       if (perluMigrasi) simpanDb();
 
-      // ===== UTILITAS KATEGORI =====
-
       function getInfoKategori(namaKategori) {
         return (
           DAFTAR_KATEGORI.find((k) => k.nama === namaKategori) || {
@@ -1147,22 +1180,17 @@
         return `<span class="badge-kategori ${info.kelas}">${info.emoji} ${info.nama}</span>`;
       }
 
-      // Ambil daftar kategori unik dari database (termasuk kategori custom)
       function getKategoriUnik() {
         let set = new Set();
         dbBarang.forEach((b) => {
           if (b.kategori) set.add(b.kategori);
         });
-        // Pastikan kategori default selalu ada
         DAFTAR_KATEGORI.forEach((k) => set.add(k.nama));
         return Array.from(set).sort();
       }
 
-      // Render opsi kategori ke semua dropdown kategori
       function renderOpsiKategori() {
         let kategoriUnik = getKategoriUnik();
-
-        // Dropdown di tab kasir (filter)
         let filterKasir = document.getElementById("filterKategoriKasir");
         let valKasir = filterKasir.value;
         filterKasir.innerHTML = '<option value="">Semua Kategori</option>';
@@ -1172,29 +1200,22 @@
         });
         filterKasir.value = valKasir;
 
-        // Dropdown di tab barang (input)
         let kategoriInput = document.getElementById("kategoriInput");
         let valInput = kategoriInput.value;
-        kategoriInput.innerHTML =
-          '<option value="">-- Pilih Kategori --</option>';
+        kategoriInput.innerHTML = '<option value="">-- Pilih Kategori --</option>';
         kategoriUnik.forEach((k) => {
           let info = getInfoKategori(k);
           kategoriInput.innerHTML += `<option value="${k}">${info.emoji} ${k}</option>`;
         });
-        // Tambah opsi "Buat Kategori Baru"
-        kategoriInput.innerHTML +=
-          '<option value="__baru__">➕ Buat Kategori Baru...</option>';
+        kategoriInput.innerHTML += '<option value="__baru__">➕ Buat Kategori Baru...</option>';
         kategoriInput.value = valInput;
 
-        // Jika memilih "Buat Kategori Baru"
         kategoriInput.onchange = function () {
           if (this.value === "__baru__") {
             let namaBaru = prompt("Masukkan nama kategori baru:");
             if (namaBaru && namaBaru.trim()) {
               namaBaru = namaBaru.trim();
-              // Cek apakah sudah ada
               if (!getKategoriUnik().includes(namaBaru)) {
-                // Tambahkan ke daftar default agar punya badge
                 DAFTAR_KATEGORI.push({
                   nama: namaBaru,
                   emoji: "📌",
@@ -1209,12 +1230,8 @@
             }
           }
         };
-
-        // Render chip filter di tab barang
         renderFilterChips();
       }
-
-      // ===== FILTER CHIPS DI TAB BARANG =====
 
       function renderFilterChips() {
         let grid = document.getElementById("filterGrid");
@@ -1233,8 +1250,6 @@
         filterKategoriAktif = kategori;
         renderFilterChips();
       }
-
-      // ===== AKHIR UTILITAS KATEGORI =====
 
       function beep() {
         try {
@@ -1258,7 +1273,7 @@
         renderBarang();
         renderPilihBarang();
         renderLaporan();
-        updateChart(); // Update chart saat data berubah
+        updateChart();
       }
 
       function gantiTab(tab) {
@@ -1349,7 +1364,6 @@
         document.getElementById("scanInput").classList.remove("cooldown");
       }
 
-      // Input scanner barcode
       document
         .getElementById("scanInput")
         .addEventListener("keypress", function (e) {
@@ -1374,7 +1388,6 @@
           }
         });
 
-      // Cek barcode otomatis di tab barang
       document.getElementById("barcode").addEventListener("input", function () {
         cekKetersediaanBarcode();
       });
@@ -1396,17 +1409,13 @@
         }
       }
 
-      // ===== PENCARIAN MANUAL BERDASARKAN NAMA + KATEGORI =====
-
       const inputCari = document.getElementById("cariManual");
       const dropdown = document.getElementById("dropdownHasil");
       const qtyWrap = document.getElementById("qtyInlineWrap");
 
       function triggerCariManual() {
-        // Dipanggil saat dropdown kategori berubah
         inputCari.dispatchEvent(new Event("input"));
         if (!inputCari.value.trim()) {
-          // Tampilkan semua barang dalam kategori yang dipilih
           inputCari.value = " ";
           inputCari.value = "";
         }
@@ -1419,7 +1428,6 @@
         barangTerpilihCari = null;
         qtyWrap.classList.add("hide");
 
-        // Tampilkan dropdown jika ada filter kategori aktif ATAU ada query
         if (q.length === 0 && !filterKat) {
           tutupDropdown();
           return;
@@ -1437,7 +1445,7 @@
           return true;
         });
 
-        hasil = hasil.slice(0, 20); // BATAS BUG ~800: Limit 50 item
+        hasil = hasil.slice(0, 20);
         indeksDiangkat = -1;
 
         if (hasil.length === 0) {
@@ -1466,7 +1474,6 @@
         dropdown.classList.add("show");
       });
 
-      // Navigasi keyboard di dropdown
       inputCari.addEventListener("keydown", function (e) {
         let items = dropdown.querySelectorAll(".dd-item");
         if (!items.length) return;
@@ -1538,7 +1545,6 @@
         inputCari.value = "";
         barangTerpilihCari = null;
         qtyWrap.classList.add("hide");
-        // UX FIX: Focus otomatis kembali ke input pencarian setelah tambah
         inputCari.focus();
       }
 
@@ -1568,15 +1574,12 @@
         }
       });
 
-      // ===== AKHIR PENCARIAN MANUAL =====
-
       function tambahManual() {
         let kode = document.getElementById("pilihBarang").value;
         let qty = parseInt(document.getElementById("qtyManual").value) || 1;
         if (kode) {
           tambahKeStruk(kode, qty);
           document.getElementById("qtyManual").value = 1;
-          // UX FIX: Focus ke ScanInput setelah menambah barang manual dari dropdown
           document.getElementById("scanInput").focus();
         }
       }
@@ -1611,18 +1614,13 @@
         beep();
         renderStruk();
       }
-
-      // ===== FUNGSI UNTUK TOMBOL PLUS/MINUS DI TABEL =====
       
       function kurangiJumlah(index) {
         let item = struk[index];
         if (item.qty > 1) {
-          // Jika Qty > 1, kurangi saja 1
           item.qty--;
           renderStruk();
         } else {
-          // Jika Qty == 1, tanya konfirmasi hapus
-          // (Karena Qty 0 berarti barang dibatalkan dari struk)
           if (confirm(`Hapus "${item.nama}" dari struk?`)) {
             hapusItemStruk(index);
           }
@@ -1632,11 +1630,6 @@
       function tambahJumlah(index) {
         let item = struk[index];
         let barangDb = dbBarang.find((b) => b.barcode === item.barcode);
-        
-        // Cek apakah stok gudang cukup untuk menambah 1 lagi
-        // Stok yang sedang 'dipesan' di keranjang adalah item.qty
-        // Sisa stok nyata = barangDb.stok
-        // Kita cek: (item.qty + 1) <= barangDb.stok ? 
         if (barangDb && (item.qty + 1) <= barangDb.stok) {
           item.qty++;
           renderStruk();
@@ -1665,7 +1658,6 @@
           totalJual += subtotal;
           totalModal += modalTotal;
           
-          // Tombol Plus Minus
           let btnAksi = `
             <button class="btn-qty-kecil btn-qty-minus" onclick="kurangiJumlah(${i})">-</button>
             <button class="btn-qty-kecil" onclick="tambahJumlah(${i})">+</button>
@@ -1685,7 +1677,6 @@
       function hapusItemStruk(i) {
         struk.splice(i, 1);
         renderStruk();
-        // UX FIX: Focus ke ScanInput setelah menghapus item dari struk
         document.getElementById("scanInput").focus();
       }
 
@@ -1697,6 +1688,44 @@
           kembali > 0 ? kembali.toLocaleString() : 0;
       }
 
+      // --- FUNGSI MODAL STRUK BARU ---
+      
+      function buatHtmlStruk(total, bayar) {
+          let itemHtml = '';
+          struk.forEach((item) => {
+              let sub = item.hargaJual * item.qty;
+              // Format tabel struk sederhana
+              itemHtml += `
+              <tr>
+                  <td style="padding-right:10px;">${item.nama}<br><span style="font-size:10px; color:#666;">${item.qty} x ${item.hargaJual.toLocaleString()}</span></td>
+                  <td style="text-align:right;">${sub.toLocaleString()}</td>
+              </tr>`;
+          });
+
+          let kembali = bayar - total;
+
+          let html = `
+              <h2>${namaToko}</h2>
+              <div class="alamat">${infoToko}</div>
+              <hr>
+              <table>
+                  ${itemHtml}
+              </table>
+              <hr>
+              <div class="total-section">
+                  <div>TOTAL: Rp ${total.toLocaleString()}</div>
+                  <div>BAYAR: Rp ${bayar.toLocaleString()}</div>
+                  <div>KEMBALIAN: Rp ${kembali.toLocaleString()}</div>
+              </div>
+              <hr>
+              <div class="footer">
+                  ${new Date().toLocaleString('id-ID')}<br>
+                  Terima kasih atas kunjungan Anda!
+              </div>
+          `;
+          return html;
+      }
+
       function selesaiTransaksi() {
         if (struk.length === 0) return alert("Struk masih kosong");
         let totalJual = struk.reduce((a, b) => a + b.hargaJual * b.qty, 0);
@@ -1706,10 +1735,8 @@
         let bayar = parseInt(document.getElementById("bayar").value) || 0;
         if (bayar < totalJual) return alert("Uang bayar kurang!");
 
-        // --- OPTIMASI: CEGAH STOK MINUS (DOUBLE CHECK) ---
+        // --- CEGAH STOK MINUS ---
         let stokMasalah = "";
-        
-        // Cek ulang stok FISIK di database sebelum mengurangi
         for (let i = 0; i < struk.length; i++) {
           let itemStruk = struk[i];
           let barangDb = dbBarang.find((b) => b.barcode === itemStruk.barcode);
@@ -1723,10 +1750,10 @@
 
         if (stokMasalah !== "") {
           alert("⛔ TRANSAKSI DIBATALKAN!\n\n" + stokMasalah + "\nSilakan periksa stok atau kurangi jumlah barang.");
-          return; // Batalkan transaksi
+          return; 
         }
 
-        // Jika aman, lanjutkan pengurangan stok
+        // SIMPAN TRANSAKSI DAN KURANGI STOK
         struk.forEach((s) => {
           let b = dbBarang.find((x) => x.barcode === s.barcode);
           if (b) b.stok -= s.qty;
@@ -1740,23 +1767,48 @@
           item: struk.map((s) => `${s.nama} x${s.qty}`).join(", "),
         });
 
+        simpanDb(); // Simpan perubahan stok & transaksi
+
+        // BUKA MODAL PREVIEW INI BUKAN PRINT LANGSUNG
+        let strukHtml = buatHtmlStruk(totalJual, bayar);
+        document.getElementById("modalStrukContent").innerHTML = strukHtml;
+        document.getElementById("modalStruk").classList.add("show");
+
+        // Siapkan juga elemen print fisik (tersembunyi)
         siapkanCetak(totalJual, bayar);
-        simpanDb();
-        window.print();
-        resetStruk();
+      }
+
+      function tutupModalStruk() {
+          document.getElementById("modalStruk").classList.remove("show");
+          resetStruk();
+      }
+
+      function cetakDariModal() {
+          window.print();
+          // Opsional: Tutup modal setelah print jika diinginkan
+          // tutupModalStruk();
+      }
+      
+      function copyStruk() {
+          let content = document.getElementById("modalStrukContent");
+          // Bersihkan HTML agar teks rapi saat copy
+          let textToCopy = content.innerText;
+          navigator.clipboard.writeText(textToCopy).then(() => {
+              alert("✅ Struk berhasil disalin! Bisa ditempel di WhatsApp/SMS.");
+          }).catch(err => {
+              alert("Gagal menyalin: " + err);
+          });
       }
 
       function siapkanCetak(total, bayar) {
-        let tbodyCetak = document.getElementById("tbodyCetak");
-        tbodyCetak.innerHTML = "";
-        struk.forEach((item) => {
-          let sub = item.hargaJual * item.qty;
-          tbodyCetak.innerHTML += `<tr><td>${item.nama}</td><td>${item.qty}</td><td>Rp ${sub.toLocaleString('id-ID')}</td></tr>`;
-        });
+        let tbodyCetak = document.getElementById("tbodyCetak"); // Note: elemen tbodyCetak tidak ada di HTML modal, kita pakai di elemen tersembunyi
+        // Karena kita pakai modal, mari kita buat elemen tersembunyi khusus print
+        // Tapi untuk efisiensi kode awal, kita gunakan innerHTML modal saja.
+        // Namun window.print() akan mencetak semua halaman kecuali .no-print.
         
-        document.getElementById("totalCetak").innerText = total.toLocaleString('id-ID');
-        document.getElementById("bayarCetak").innerText = bayar.toLocaleString('id-ID');
-        document.getElementById("kembaliCetak").innerText = (bayar - total).toLocaleString('id-ID');
+        // Mari kita update elemen #cetakStruk (hidden div) untuk keperluan print
+        let printDiv = document.getElementById("cetakStruk");
+        printDiv.innerHTML = `<h2>${namaToko}</h2><div class="alamat-toko">${infoToko}</div><hr><table>${document.querySelector("#modalStrukContent table").innerHTML}</table><hr><div style="text-align:right;font-weight:bold">TOTAL: Rp ${total.toLocaleString()}<br>BAYAR: Rp ${bayar.toLocaleString()}<br>KEMBALIAN: Rp ${(bayar-total).toLocaleString()}</div><hr><p style="text-align:center;font-size:12px">Terima kasih!</p>`;
       }
 
       function resetStruk() {
@@ -1779,30 +1831,25 @@
         let barcode = document.getElementById("barcode").value.trim();
         let nama = document.getElementById("nama").value.trim();
         let kategori = document.getElementById("kategoriInput").value;
-        let hargaBeli =
-          parseInt(document.getElementById("hargaBeli").value) || 0;
-        let hargaJual =
-          parseInt(document.getElementById("hargaJual").value) || 0;
+        let hargaBeli = parseInt(document.getElementById("hargaBeli").value) || 0;
+        let hargaJual = parseInt(document.getElementById("hargaJual").value) || 0;
         let stokInput = parseInt(document.getElementById("stok").value) || 0;
 
         if (!barcode || !nama) return alert("Isi Barcode dan Nama Barang");
         if (!kategori) return alert("Pilih kategori barang");
         if (hargaJual <= 0) return alert("Harga jual harus lebih dari 0");
-        if (stokInput <= 0)
-          return alert("Jumlah stok yang ditambahkan harus lebih dari 0");
+        if (stokInput <= 0) return alert("Jumlah stok yang ditambahkan harus lebih dari 0");
 
         let idx = dbBarang.findIndex((b) => b.barcode === barcode);
 
         if (idx >= 0) {
-          // PERBAIKAN BUG: Hapus baris dbBarang[idx].stok = stokInput; agar stok ditambahkan, bukan ditimpa
+          // BUG FIX DIBAWAH: Hapus baris dbBarang[idx].stok = stokInput;
           dbBarang[idx].stok += stokInput;
           dbBarang[idx].nama = nama;
           dbBarang[idx].kategori = kategori;
           dbBarang[idx].hargaBeli = hargaBeli;
           dbBarang[idx].hargaJual = hargaJual;
-          alert(
-            `Berhasil menambahkan ${stokInput} stok. Total stok ${nama} sekarang: ${dbBarang[idx].stok}`,
-          );
+          alert(`Berhasil menambahkan ${stokInput} stok. Total stok ${nama} sekarang: ${dbBarang[idx].stok}`);
         } else {
           dbBarang.push({
             barcode,
@@ -1847,14 +1894,11 @@
       function renderBarang() {
         let tbody = document.querySelector("#tabelBarang tbody");
         tbody.innerHTML = "";
-
-        // Filter berdasarkan kategori aktif
         let daftarTampil = filterKategoriAktif
           ? dbBarang.filter((b) => b.kategori === filterKategoriAktif)
           : dbBarang;
 
         daftarTampil.forEach((b, i) => {
-          // Cari index asli di dbBarang
           let asliIdx = dbBarang.indexOf(b);
           let labaPerPcs = b.hargaJual - b.hargaBeli;
           let labaColor = labaPerPcs >= 0 ? "var(--hijau)" : "var(--merah)";
@@ -1888,18 +1932,12 @@
       function renderPilihBarang() {
         let select = document.getElementById("pilihBarang");
         select.innerHTML = '<option value="">-- Pilih Barang --</option>';
-        
-        // Ambil list kategori unik yang sudah ada
         let kategoriUnik = getKategoriUnik();
-        
-        // Set untuk melacak barang yang sudah dimasukkan ke dropdown (agar tidak duplikat)
         let processedBarcodes = new Set();
 
-        // Loop kategori
         kategoriUnik.forEach((kat) => {
           let barangKat = dbBarang.filter((b) => b.kategori === kat);
           if (barangKat.length === 0) return;
-          
           let info = getInfoKategori(kat);
           let optgroup = document.createElement("optgroup");
           optgroup.label = `${info.emoji} ${kat}`;
@@ -1916,11 +1954,7 @@
           select.appendChild(optgroup);
         });
 
-        // Handle barang tanpa kategori (string kosong, null, atau undefined) yang belum tercover
-        // Cari barang yang belum ada di processedBarcodes
         let tanpaKat = dbBarang.filter((b) => !b.kategori || b.kategori === "" || b.kategori === null || b.kategori === undefined);
-        
-        // Filter ulang barang yang belum ada di processedBarcodes
         tanpaKat = tanpaKat.filter((b) => !processedBarcodes.has(b.barcode));
 
         if (tanpaKat.length > 0) {
@@ -1973,39 +2007,31 @@
       }
 
       function updateChart() {
-        // Ambil data transaksi hari ini
         let hariIni = new Date().toLocaleDateString("id-ID");
         let transaksiHariIni = dbTransaksi.filter((t) => t.waktu.includes(hariIni));
         
-        // Jika belum ada chart instance, buat baru
         if (chartInstance) {
             chartInstance.destroy();
         }
 
         let dataPerJam = {};
         transaksiHariIni.forEach(t => {
-            // Ambil jam dari string waktu (contoh: "20/10/2023, 14.30.00")
             let parts = t.waktu.split(', ');
             let jamRaw = parts[1] || "";
-            
-            // Bersihkan titik jika ada (tergantung format locale browser)
-            let jamLabel = jamRaw.substring(0, 5); // Ambil HH.MM atau HH:MM
-
+            let jamLabel = jamRaw.substring(0, 5);
             if (!dataPerJam[jamLabel]) {
                 dataPerJam[jamLabel] = 0;
             }
             dataPerJam[jamLabel] += t.totalJual;
         });
 
-        // Urutkan jam agar grafik berurutan kiri ke kanan
         let labels = Object.keys(dataPerJam).sort();
         let dataOmset = labels.map(l => dataPerJam[l]);
 
-        // Setup Chart.js
         const ctx = document.getElementById('chartLaporan').getContext('2d');
         
         chartInstance = new Chart(ctx, {
-            type: 'line', // Ganti ke Line Chart
+            type: 'line',
             data: {
                 labels: labels,
                 datasets: [{
@@ -2017,13 +2043,13 @@
                     pointBackgroundColor: '#fff',
                     pointBorderColor: 'rgba(37, 99, 235, 1)',
                     pointRadius: 4,
-                    fill: true, // Aktifkan area fill
-                    tension: 0.4 // Efek lengkung (smooth curve)
+                    fill: true,
+                    tension: 0.4
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false, // Penting agar canvas tidak gepeng
+                maintainAspectRatio: false,
                 plugins: {
                     legend: { display: true, position: 'top' },
                     tooltip: {
@@ -2046,7 +2072,6 @@
                         beginAtZero: true,
                         grid: { color: '#f1f5f9' },
                         ticks: {
-                           // Format angka sumbu Y agar tidak terlalu panjang (misal 1jt)
                            callback: function(value) {
                                if(value >= 1000000) return (value/1000000) + ' Jt';
                                if(value >= 1000) return (value/1000) + ' Rb';
@@ -2084,7 +2109,6 @@
         }
       }
 
-      // UX FIX: Tambah event listener untuk input qty manual agar fokus balik ke scan
       document.getElementById("qtyManual").addEventListener("keypress", function (e) {
         if (e.key === "Enter") {
           e.preventDefault();
