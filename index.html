@@ -97,7 +97,7 @@
         white-space: nowrap;
         border-bottom: 1px solid var(--border);
         position: sticky;
-        top: 73px; /* Height of header */
+        top: 73px;
         z-index: 40;
       }
       .tabs::-webkit-scrollbar { display: none; }
@@ -237,6 +237,46 @@
       .modal-title { font-size: 18px; font-weight: 700; color: var(--text-main); }
       .modal-close { background: none; border: none; font-size: 24px; color: var(--text-muted); cursor: pointer; padding: 0; width: auto; margin: 0; }
       
+      /* --- POP UP MINI (SCANNED ITEM) --- */
+      /* Ini adalah elemen melayang di atas kamera */
+      #popUpMini {
+        position: absolute;
+        top: 10px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-100%); /* Mulai di luar layar (atas) */
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(4px);
+        color: #064e3b; /* Dark Green */
+        padding: 10px 20px;
+        border-radius: 50px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        width: 90%;
+        max-width: 350px;
+        opacity: 0;
+        transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.3s;
+        pointer-events: none; /* Klik tembus ke kamera */
+      }
+      #popUpMini.show {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+      }
+      #popUpMini .icon {
+        background: #d1fae5;
+        color: #059669;
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+      #popUpMini .info { flex: 1; min-width: 0; }
+      #popUpMini .name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      #popUpMini .price { font-size: 12px; color: var(--text-muted); }
+
       /* --- FAB (Floating Action Button) --- */
       .fab {
         position: fixed;
@@ -266,13 +306,24 @@
       td.tengah, th.tengah { text-align: center; }
 
       /* --- SCANNER SPECIFIC --- */
+      /* Container Kamera agar PopUp Mini bisa absolute di dalamnya */
+      .scan-wrapper {
+        position: relative;
+        margin-top: 10px;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        background: #000;
+        display: none; /* Hidden by default */
+      }
+      .scan-wrapper.active { display: block; }
+
       #scanInput {
         font-size: 16px; background: #fffbeb; border: 2px solid #fcd34d; color: #92400e; font-weight: 600;
       }
       #scanInput.cooldown { background: #fef2f2; border: 2px solid #fca5a5; color: #991b1b; }
       .status-scan { font-size: 12px; height: 18px; color: var(--warning); font-weight: 600; margin-top: -8px; margin-bottom: 12px; text-align: center; }
       
-      #reader, #readerBarang { width: 100% !important; border-radius: var(--radius-md); overflow: hidden; background: #000; margin-top: 10px; }
+      #reader, #readerBarang { width: 100% !important; height: 250px; }
       #reader video, #readerBarang video { object-fit: cover; border-radius: var(--radius-md); }
 
       /* --- TOTAL BOXES --- */
@@ -374,7 +425,18 @@
             <div id="statusScan" class="status-scan"></div>
             <button class="btn-kamera" onclick="mulaiScanKamera('kasir')">📷 Buka Kamera</button>
             <button onclick="stopScanKamera()" id="btnStop" class="hide btn-hapus-item">Tutup Kamera</button>
-            <div id="reader" class="hide"></div>
+            
+            <!-- WRAPPER KAMERA + POP UP MINI -->
+            <div class="scan-wrapper" id="scanWrapper">
+              <div id="popUpMini">
+                <div class="icon">✅</div>
+                <div class="info">
+                  <div class="name" id="popUpName">Nama Barang</div>
+                  <div class="price" id="popUpPrice">Rp 0</div>
+                </div>
+              </div>
+              <div id="reader"></div>
+            </div>
 
             <!-- INFO BARANG TERAKHIR -->
             <div id="cardLastScanned">
@@ -488,14 +550,11 @@
           </div>
         </div>
 
-        <!-- TAB BARANG (Card Form Asli disembunyikan/opsional, utamakan Modal) -->
+        <!-- TAB BARANG -->
         <div id="barang" class="hide no-print">
           <div class="card" style="display:none;">
-             <!-- Ini form lama, disembunyikan karena sudah ada Modal -->
-             <h3>Tambah / Edit Barang (Lama)</h3>
-             ...form lama...
+             <!-- Form lama disembunyikan -->
           </div>
-          
           <div class="card">
             <h3>Daftar Barang</h3>
             <div class="filter-grid" id="filterGrid"></div>
@@ -542,8 +601,7 @@
               <button onclick="hapusLaporan()" class="btn-hapus-item" style="width: auto;">🗑️ Hapus</button>
             </div>
           </div>
-          
-          <div class="card" style="margin-top: 20px;">
+          <div class="card">
             <h3>Riwayat Transaksi</h3>
             <div style="overflow-x: auto;">
               <table id="tabelLaporan">
@@ -566,7 +624,7 @@
         <div id="sinkronisasi" class="hide no-print">
           <div class="card">
             <h3>☁️ Sinkronisasi Otomatis</h3>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Data dikirim ke Google Sheets secara otomatis setelah setiap transaksi selesai.</p>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Data dikirim ke Google Sheets secara otomatis setelah transaksi.</p>
             <div id="infoSync" style="background: #f1f5f9; border: 1px solid var(--border); color: var(--text-muted); padding: 12px; border-radius: var(--radius-md); font-size: 13px; margin-bottom: 15px;">Status: Menunggu transaksi...</div>
             <button class="btn-sync hide" id="btnSyncAction" onclick="kirimKeGoogleSheets()"><span>🚀</span> Kirim Manual (Debug)</button>
           </div>
@@ -588,10 +646,10 @@
             <input type="text" id="setFooterToko" placeholder="Terima kasih..." />
             <button class="btn-simpan-seting" onclick="simpanPengaturan()">💾 Simpan Identitas</button>
           </div>
-          <div class="card" style="margin-top: 20px;">
+          <div class="card">
             <h3>📶 Printer Bluetooth</h3>
             <button class="btn-bluetooth" onclick="connectBluetoothPrinter()">🔍 Cari Printer</button>
-            <div id="statusBluetooth" style="margin-top: 10px; font-size: 13px; color: var(--text-muted);">Status: <span id="textStatusBluetooth" style="font-weight: 700; color: var(--text-main);">Belum terhubung</span></div>
+            <div id="statusBluetooth" style="margin-top: 12px; font-size: 13px; color: var(--text-muted);">Status: <span id="textStatusBluetooth" style="font-weight: 700; color: var(--text-main);">Belum terhubung</span></div>
             <button id="btnTestPrint" class="hide" onclick="testPrintBluetooth()" style="background: var(--success); margin-top: 10px;">🧾 Tes Cetak</button>
             <button id="btnDisconnectBt" class="hide btn-hapus-item" onclick="disconnectBluetoothPrinter()" style="margin-top: 10px; width: auto;">Putuskan</button>
           </div>
@@ -626,11 +684,8 @@
             <div class="modal-title">Tambah Barang Baru</div>
             <button class="modal-close" onclick="tutupModalTambahBarang()">&times;</button>
           </div>
-          
           <div id="readerBarangModal" style="width: 100%; height: 200px; background: #000; border-radius: var(--radius-md); overflow: hidden; margin-bottom: 12px; display: none;"></div>
-          
           <button class="btn-kamera" id="btnScanModal" onclick="toggleScanModal()">📷 Scan Barcode</button>
-          
           <input type="text" id="modalBarcode" placeholder="Barcode / Kode Barang" />
           <input type="text" id="modalNama" placeholder="Nama Barang" />
           <select id="modalKategori">
@@ -645,7 +700,6 @@
           <input type="number" id="modalHargaBeli" placeholder="Harga Beli (Modal)" />
           <input type="number" id="modalHargaJual" placeholder="Harga Jual" />
           <input type="number" id="modalStok" placeholder="Stok Awal" />
-          
           <button class="btn-selesai" onclick="simpanDariModal()">💾 Simpan Barang</button>
         </div>
       </div>
@@ -683,10 +737,10 @@
       let dbTransaksi = JSON.parse(localStorage.getItem("transaksi") || "[]");
       let struk = [];
       let html5QrcodeScanner = null;
-      let html5QrcodeScannerModal = null; // Scanner khusus modal
+      let html5QrcodeScannerModal = null;
       let modeScan = "kasir";
       let isScanning = false;
-      let isScanningModal = false; // Flag scan modal
+      let isScanningModal = false;
       let debounceTimer = null;
       let SCAN_DELAY_MS = parseInt(pengaturanToko.scannerDelay) || 1000;
 
@@ -743,11 +797,12 @@
           infoSync.innerHTML = `✅ Terakhir sinkron: <b>${new Date(pengaturanToko.lastSync).toLocaleString("id-ID")}</b>`;
           infoSync.style.background = "#ecfdf5";
           infoSync.style.color = "#065f46";
-          infoSync.style.borderColor = "#a7f3d0";
+          infoSync.style.borderColor = "#6ee7b7";
         } else {
           infoSync.innerText = "Status: Belum pernah sinkronisasi.";
           infoSync.style.background = "#f1f5f9";
           infoSync.style.color = "#64748b";
+          infoSync.style.borderColor = "#e2e8f0";
         }
       }
       function tambahLogSync(pesan) {
@@ -835,7 +890,9 @@
           document.getElementById("textStatusBluetooth").style.color = "var(--success)";
           document.getElementById("btnDisconnectBt").classList.remove("hide");
           document.getElementById("btnTestPrint").classList.remove("hide");
-        } catch (error) { alert("Gagal: " + error); }
+        } catch (error) {
+          alert("Gagal: " + error);
+        }
       }
       async function printBluetooth(dataArray) {
         if (!bluetoothCharacteristic) return alert("Printer belum terhubung!");
@@ -856,19 +913,20 @@
         document.getElementById("btnTestPrint").classList.add("hide");
       }
 
-      // --- KAMERA & SCAN (MAIN) ---
+      // --- KAMERA & SCAN ---
       function mulaiScanKamera(mode) {
         modeScan = mode;
         stopScanKamera();
-        let readerId = mode === "kasir" ? "reader" : "readerBarang"; // NOTE: readerBarang asli disembunyikan, ini untuk form lama jika dipakai
-        let btnStopId = mode === "kasir" ? "btnStop" : "btnStopBarang";
-        document.getElementById(readerId).classList.remove("hide");
-        document.getElementById(btnStopId).classList.remove("hide");
+        
+        // Tampilkan wrapper kamera
+        if (mode === 'kasir') {
+            document.getElementById('scanWrapper').classList.add('active');
+            document.getElementById('scanWrapper').style.display = 'block';
+        }
 
-        html5QrcodeScanner = new Html5QrcodeScanner(readerId, { fps: 10, qrbox: { width: 250, height: 150 } });
+        html5QrcodeScanner = new Html5Qrcode("reader", { formatsToSupport: ["ean_13", "code_128", "upc_a", "code_39"] });
 
-        html5QrcodeScanner
-          .render(onScanSuccess, (errorMessage) => {})
+        html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, onScanSuccess, (errorMessage) => {})
           .catch((err) => {
             alert("Gagal akses kamera: " + err);
             stopScanKamera();
@@ -882,11 +940,14 @@
 
         if (modeScan === "kasir") {
           let barang = dbBarang.find((b) => b.barcode === decodedText);
+          
+          // Trigger Pop Up Mini
+          tampilkanPopUpMini(barang);
+
           if (barang) updateLastScannedCard(barang);
           tambahKeStruk(decodedText);
           setTimeout(() => { isScanning = false; hapusStatusScan(); }, SCAN_DELAY_MS);
         } else {
-          // Scan untuk form lama (tab barang)
           document.getElementById("barcode").value = decodedText;
           cekKetersediaanBarcode();
           stopScanKamera();
@@ -899,16 +960,35 @@
 
       function stopScanKamera() {
         if (html5QrcodeScanner) {
-          html5QrcodeScanner
-            .clear()
-            .then(() => {
-              document.getElementById("reader").classList.add("hide");
-              document.getElementById("readerBarang").classList.add("hide");
-              document.getElementById("btnStop").classList.add("hide");
-              document.getElementById("btnStopBarang").classList.add("hide");
-              html5QrcodeScanner = null;
-            })
-            .catch((err) => { html5QrcodeScanner = null; });
+          html5QrcodeScanner.stop().then(() => {
+            html5QrcodeScanner.clear();
+            html5QrcodeScanner = null;
+            // Sembunyikan wrapper kamera
+            document.getElementById('scanWrapper').classList.remove('active');
+            document.getElementById('scanWrapper').style.display = 'none';
+            // Sembunyikan pop up mini
+            document.getElementById('popUpMini').classList.remove('show');
+          }).catch((err) => { html5QrcodeScanner = null; });
+        }
+      }
+
+      // --- POP UP MINI LOGIC ---
+      function tampilkanPopUpMini(barang) {
+        const popUp = document.getElementById('popUpMini');
+        if (barang) {
+            document.getElementById('popUpName').innerText = barang.nama;
+            document.getElementById('popUpPrice').innerText = 'Rp ' + barang.hargaJual.toLocaleString();
+            popUp.classList.add('show');
+            // Hilangkan setelah 1.5 detik
+            setTimeout(() => {
+                popUp.classList.remove('show');
+            }, 1500);
+        } else {
+            // Jika barang tidak ditemukan
+            document.getElementById('popUpName').innerText = "Tidak Ditemukan";
+            document.getElementById('popUpPrice').innerText = "Kode: " + decodedText;
+            popUp.classList.add('show');
+            setTimeout(() => popUp.classList.remove('show'), 1500);
         }
       }
 
@@ -984,12 +1064,8 @@
         if (diStruk) diStruk.qty += qty;
         else
           struk.push({
-            barcode: barang.barcode,
-            nama: barang.nama,
-            kategori: barang.kategori,
-            hargaBeli: barang.hargaBeli,
-            hargaJual: barang.hargaJual,
-            qty: qty,
+            barcode: barang.barcode, nama: barang.nama, kategori: barang.kategori,
+            hargaBeli: barang.hargaBeli, hargaJual: barang.hargaJual, qty: qty,
           });
         beep();
         renderStruk();
@@ -1051,88 +1127,6 @@
         document.getElementById("kembalian").innerText = kembali > 0 ? kembali.toLocaleString() : 0;
       }
 
-      // --- MODAL TAMBAH BARANG (NEW) ---
-      function bukaModalTambahBarang() {
-        document.getElementById('modalTambahBarang').classList.add('show');
-        resetFormModal();
-      }
-      function tutupModalTambahBarang() {
-        document.getElementById('modalTambahBarang').classList.remove('show');
-        stopScanModal();
-      }
-      function resetFormModal() {
-        document.getElementById('modalBarcode').value = '';
-        document.getElementById('modalNama').value = '';
-        document.getElementById('modalKategori').value = '';
-        document.getElementById('modalHargaBeli').value = '';
-        document.getElementById('modalHargaJual').value = '';
-        document.getElementById('modalStok').value = '';
-        stopScanModal();
-      }
-
-      function toggleScanModal() {
-        if (isScanningModal) stopScanModal();
-        else mulaiScanModal();
-      }
-
-      function mulaiScanModal() {
-        document.getElementById('readerBarangModal').style.display = 'block';
-        document.getElementById('btnScanModal').innerHTML = '🛑 Tutup Scan';
-        document.getElementById('btnScanModal').style.background = 'var(--danger)';
-        isScanningModal = true;
-
-        html5QrcodeScannerModal = new Html5Qrcode("readerBarangModal");
-        html5QrcodeScannerModal.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (decodedText) => {
-          document.getElementById('modalBarcode').value = decodedText;
-          stopScanModal();
-        }).catch(err => {
-          alert("Gagal kamera modal: " + err);
-          stopScanModal();
-        });
-      }
-
-      function stopScanModal() {
-        if (html5QrcodeScannerModal) {
-          html5QrcodeScannerModal.stop().then(() => {
-            document.getElementById('readerBarangModal').style.display = 'none';
-            document.getElementById('btnScanModal').innerHTML = '📷 Scan Barcode';
-            document.getElementById('btnScanModal').style.background = ''; // Reset to default CSS
-            isScanningModal = false;
-            html5QrcodeScannerModal = null;
-          }).catch(err => console.error(err));
-        }
-      }
-
-      function simpanDariModal() {
-        let barcode = document.getElementById('modalBarcode').value.trim();
-        let nama = document.getElementById('modalNama').value.trim();
-        let kategori = document.getElementById('modalKategori').value;
-        let hargaBeli = parseInt(document.getElementById('modalHargaBeli').value) || 0;
-        let hargaJual = parseInt(document.getElementById('modalHargaJual').value) || 0;
-        let stok = parseInt(document.getElementById('modalStok').value) || 0;
-
-        if (!barcode || !nama || !kategori || hargaJual <= 0 || stok < 0) return alert("Mohon lengkapi data dengan benar.");
-
-        let idx = dbBarang.findIndex((b) => b.barcode === barcode);
-        if (idx >= 0) {
-          if(confirm(`Barcode ${barcode} sudah ada. Tambahkan stok sebesar ${stok}?`)) {
-             dbBarang[idx].stok += stok;
-             dbBarang[idx].nama = nama;
-             dbBarang[idx].kategori = kategori;
-             dbBarang[idx].hargaBeli = hargaBeli;
-             dbBarang[idx].hargaJual = hargaJual;
-          } else {
-            return;
-          }
-        } else {
-          dbBarang.push({ barcode, nama, kategori, hargaBeli, hargaJual, stok });
-        }
-
-        simpanDb();
-        showToast("Barang berhasil disimpan!");
-        tutupModalTambahBarang();
-      }
-
       // --- NAVIGASI BARU ---
       function pindahKeTabStruk() {
         if (struk.length === 0) return alert("Struk kosong!");
@@ -1175,9 +1169,7 @@
 
         dbTransaksi.push({
           waktu: new Date().toLocaleString("id-ID"),
-          totalJual: totalJual,
-          totalModal: totalModal,
-          laba: laba,
+          totalJual: totalJual, totalModal: totalModal, laba: laba,
           item: struk.map((s) => `${s.nama} x${s.qty}`).join(", "),
         });
 
@@ -1185,7 +1177,7 @@
 
         kirimKeGoogleSheets().catch((err) => {
           console.warn("Sinkronisasi gagal (mungkin offline):", err);
-          tambahLogSync("⚠️ Offline: Data disimpan lokal, belum terkirim.");
+          tambahLogSync("⚠️ Offline: Data disimpan lokal.");
         });
 
         let printData = generateBluetoothData(totalJual, bayar);
@@ -1249,6 +1241,7 @@
         if (tabKasir.classList.contains("aktif")) { document.getElementById("scanInput").focus(); }
       }
 
+      // --- UTILITIES ---
       function gantiTab(tab) {
         stopScanKamera();
         tutupDropdown();
@@ -1352,58 +1345,103 @@
         if (kode) { tambahKeStruk(kode, qty); document.getElementById("qtyManual").value = 1; }
       }
 
-      function simpanBarang() {
-        // Fungsi ini dipertahankan untuk backward compatibility dengan form lama, 
-        // tapi user disarankan pakai Modal.
-        let barcode = document.getElementById("barcode").value.trim();
-        let nama = document.getElementById("nama").value.trim();
-        let kategori = document.getElementById("kategoriInput").value;
-        let hargaBeli = parseInt(document.getElementById("hargaBeli").value) || 0;
-        let hargaJual = parseInt(document.getElementById("hargaJual").value) || 0;
-        let stokInput = parseInt(document.getElementById("stok").value) || 0;
+      // --- MODAL BARANG ---
+      function bukaModalTambahBarang() {
+        document.getElementById('modalTambahBarang').classList.add('show');
+        resetFormModal();
+      }
+      function tutupModalTambahBarang() {
+        document.getElementById('modalTambahBarang').classList.remove('show');
+        stopScanModal();
+      }
+      function resetFormModal() {
+        document.getElementById('modalBarcode').value = '';
+        document.getElementById('modalNama').value = '';
+        document.getElementById('modalKategori').value = '';
+        document.getElementById('modalHargaBeli').value = '';
+        document.getElementById('modalHargaJual').value = '';
+        document.getElementById('modalStok').value = '';
+        stopScanModal();
+      }
 
-        if (!barcode || !nama) return alert("Isi Barcode dan Nama");
-        if (!kategori) return alert("Pilih Kategori");
-        if (hargaJual <= 0) return alert("Harga jual > 0");
-        if (stokInput <= 0) return alert("Stok input > 0");
+      function toggleScanModal() {
+        if (isScanningModal) stopScanModal();
+        else mulaiScanModal();
+      }
+
+      function mulaiScanModal() {
+        document.getElementById('readerBarangModal').style.display = 'block';
+        document.getElementById('btnScanModal').innerHTML = '🛑 Tutup Scan';
+        document.getElementById('btnScanModal').style.background = 'var(--danger)';
+        isScanningModal = true;
+
+        html5QrcodeScannerModal = new Html5Qrcode("readerBarangModal");
+        html5QrcodeScannerModal.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (decodedText) => {
+          document.getElementById('modalBarcode').value = decodedText;
+          stopScanModal();
+        }).catch(err => {
+          alert("Gagal kamera modal: " + err);
+          stopScanModal();
+        });
+      }
+
+      function stopScanModal() {
+        if (html5QrcodeScannerModal) {
+          html5QrcodeScannerModal.stop().then(() => {
+            document.getElementById('readerBarangModal').style.display = 'none';
+            document.getElementById('btnScanModal').innerHTML = '📷 Scan Barcode';
+            document.getElementById('btnScanModal').style.background = ''; // Reset to default CSS
+            isScanningModal = false;
+            html5QrcodeScannerModal = null;
+          }).catch(err => console.error(err));
+        }
+      }
+
+      function simpanDariModal() {
+        let barcode = document.getElementById('modalBarcode').value.trim();
+        let nama = document.getElementById('modalNama').value.trim();
+        let kategori = document.getElementById('modalKategori').value;
+        let hargaBeli = parseInt(document.getElementById('modalHargaBeli').value) || 0;
+        let hargaJual = parseInt(document.getElementById('modalHargaJual').value) || 0;
+        let stok = parseInt(document.getElementById('modalStok').value) || 0;
+
+        if (!barcode || !nama || !kategori || hargaJual <= 0 || stok < 0) return alert("Mohon lengkapi data dengan benar.");
 
         let idx = dbBarang.findIndex((b) => b.barcode === barcode);
         if (idx >= 0) {
-          dbBarang[idx].stok += stokInput;
-          dbBarang[idx].nama = nama;
-          dbBarang[idx].kategori = kategori;
-          dbBarang[idx].hargaBeli = hargaBeli;
-          dbBarang[idx].hargaJual = hargaJual;
-          alert("Stok ditambah. Total: " + dbBarang[idx].stok);
+          if(confirm(`Barcode ${barcode} sudah ada. Tambahkan stok sebesar ${stok}?`)) {
+             dbBarang[idx].stok += stok;
+             dbBarang[idx].nama = nama;
+             dbBarang[idx].kategori = kategori;
+             dbBarang[idx].hargaBeli = hargaBeli;
+             dbBarang[idx].hargaJual = hargaJual;
+          } else {
+            return;
+          }
         } else {
-          dbBarang.push({ barcode, nama, kategori, hargaBeli, hargaJual, stok: stokInput });
-          alert("Barang baru disimpan");
+          dbBarang.push({ barcode, nama, kategori, hargaBeli, hargaJual, stok });
         }
-        batalEditBarang();
+
         simpanDb();
+        showToast("Barang berhasil disimpan!");
+        tutupModalTambahBarang();
       }
 
+      // --- FORM LAMA BARANG (Untuk Edit) ---
       function editBarang(i) {
-        // Redirect ke Modal Edit
         let b = dbBarang[i];
+        // Isi Modal untuk edit
         document.getElementById('modalBarcode').value = b.barcode;
         document.getElementById('modalNama').value = b.nama;
         document.getElementById('modalKategori').value = b.kategori;
         document.getElementById('modalHargaBeli').value = b.hargaBeli;
         document.getElementById('modalHargaJual').value = b.hargaJual;
-        document.getElementById('modalStok').value = b.stok;
+        document.getElementById('modalStok').value = b.stok; // Tampilkan stok total
+        document.getElementById('modalStok').placeholder = "Stok Total (Edit)";
+        // Ubah fungsi simpan sementara untuk edit? 
+        // Agar simpel, kita biarkan modal menambahkan stok. 
+        // Untuk edit stok total, user bisa pakai tombol +/- di tabel.
         bukaModalTambahBarang();
-      }
-
-      function batalEditBarang() {
-        document.getElementById("barcode").value = "";
-        document.getElementById("nama").value = "";
-        document.getElementById("kategoriInput").value = "";
-        document.getElementById("hargaBeli").value = "";
-        document.getElementById("hargaJual").value = "";
-        document.getElementById("stok").value = "";
-        document.getElementById("btnBatalEdit").style.display = "none";
-        document.getElementById("infoStok").style.display = "none";
       }
 
       function renderBarang() {
@@ -1456,11 +1494,10 @@
         });
         filterKasir.value = valKasir;
 
-        let kategoriInput = document.getElementById("kategoriInput");
+        let kategoriInput = document.getElementById("modalKategori");
         let valInput = kategoriInput.value;
         kategoriInput.innerHTML = '<option value="">-- Pilih Kategori --</option>';
         DAFTAR_KATEGORI.forEach((k) => (kategoriInput.innerHTML += `<option value="${k.nama}">${k.emoji} ${k.nama}</option>`));
-        kategoriInput.innerHTML += '<option value="__baru__">➕ Buat Baru...</option>';
         kategoriInput.value = valInput;
 
         renderFilterChips();
