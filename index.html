@@ -266,14 +266,51 @@
       td.tengah, th.tengah { text-align: center; }
 
       /* --- SCANNER SPECIFIC --- */
+      
+      /* 1. Scanner Input Manual */
       #scanInput {
         font-size: 16px; background: #fffbeb; border: 2px solid #fcd34d; color: #92400e; font-weight: 600;
       }
       #scanInput.cooldown { background: #fef2f2; border: 2px solid #fca5a5; color: #991b1b; }
       .status-scan { font-size: 12px; height: 18px; color: var(--warning); font-weight: 600; margin-top: -8px; margin-bottom: 12px; text-align: center; }
       
-      #reader, #readerBarang { width: 100% !important; border-radius: var(--radius-md); overflow: hidden; background: #000; margin-top: 10px; }
-      #reader video, #readerBarang video { object-fit: cover; border-radius: var(--radius-md); }
+      /* 2. Scanner Kamera KASIR (Diubah jadi KECIL/WIDGET) */
+      #reader {
+        /* Perubahan disini agar tampilan kecil */
+        width: 100% !important; 
+        max-width: 320px !important; /* Batas lebar agar tidak melebar */
+        margin: 10px auto; /* Tengah */
+        border-radius: var(--radius-md); 
+        overflow: hidden; 
+        background: #000; 
+        display: none; /* Hidden by default */
+        position: relative;
+        border: 2px solid var(--border);
+      }
+      
+      /* Memastikan video di dalam reader pas dan tidak meluber */
+      #reader video {
+        object-fit: cover; 
+        border-radius: var(--radius-md);
+        width: 100% !important;
+        height: auto !important;
+        max-height: 200px; /* Batas tinggi */
+      }
+
+      /* 3. Scanner Kamera MODAL (Tetap Normal/Legap) */
+      #readerBarangModal {
+        width: 100% !important;
+        height: 200px;
+        background: #000;
+        border-radius: var(--radius-md);
+        overflow: hidden;
+        margin-bottom: 12px;
+        display: none;
+      }
+      #readerBarangModal video {
+        object-fit: cover;
+        border-radius: var(--radius-md);
+      }
 
       /* --- TOTAL BOXES --- */
       .total-box { background: var(--primary); color: white; padding: 16px; border-radius: var(--radius-md); margin: 10px 0; text-align: center; position: relative; overflow: hidden; }
@@ -374,6 +411,7 @@
             <div id="statusScan" class="status-scan"></div>
             <button class="btn-kamera" onclick="mulaiScanKamera('kasir')">📷 Buka Kamera</button>
             <button onclick="stopScanKamera()" id="btnStop" class="hide btn-hapus-item">Tutup Kamera</button>
+            <!-- DIV Reader Kasir (Sekarang Kecil) -->
             <div id="reader" class="hide"></div>
 
             <!-- INFO BARANG TERAKHIR -->
@@ -488,10 +526,10 @@
           </div>
         </div>
 
-        <!-- TAB BARANG (Card Form Asli disembunyikan/opsional, utamakan Modal) -->
+        <!-- TAB BARANG -->
         <div id="barang" class="hide no-print">
           <div class="card" style="display:none;">
-             <!-- Ini form lama, disembunyikan karena sudah ada Modal -->
+             <!-- Form lama disembunyikan -->
              <h3>Tambah / Edit Barang (Lama)</h3>
              ...form lama...
           </div>
@@ -627,7 +665,8 @@
             <button class="modal-close" onclick="tutupModalTambahBarang()">&times;</button>
           </div>
           
-          <div id="readerBarangModal" style="width: 100%; height: 200px; background: #000; border-radius: var(--radius-md); overflow: hidden; margin-bottom: 12px; display: none;"></div>
+          <!-- Scanner Kamera MODAL (Terpisah dari Kasir) -->
+          <div id="readerBarangModal"></div>
           
           <button class="btn-kamera" id="btnScanModal" onclick="toggleScanModal()">📷 Scan Barcode</button>
           
@@ -682,8 +721,11 @@
       let dbBarang = JSON.parse(localStorage.getItem("barang") || "[]");
       let dbTransaksi = JSON.parse(localStorage.getItem("transaksi") || "[]");
       let struk = [];
-      let html5QrcodeScanner = null;
-      let html5QrcodeScannerModal = null; // Scanner khusus modal
+      
+      // SCANNER OBJECTS (Independen)
+      let html5QrcodeScannerKasir = null;
+      let html5QrcodeScannerModal = null; 
+
       let modeScan = "kasir";
       let isScanning = false;
       let isScanningModal = false; // Flag scan modal
@@ -856,60 +898,59 @@
         document.getElementById("btnTestPrint").classList.add("hide");
       }
 
-      // --- KAMERA & SCAN (MAIN) ---
+      // --- KAMERA & SCAN KASIR (KECIL) ---
       function mulaiScanKamera(mode) {
         modeScan = mode;
         stopScanKamera();
-        let readerId = mode === "kasir" ? "reader" : "readerBarang"; // NOTE: readerBarang asli disembunyikan, ini untuk form lama jika dipakai
-        let btnStopId = mode === "kasir" ? "btnStop" : "btnStopBarang";
+        
+        // Hanya handle mode kasir di sini
+        let readerId = "reader"; 
+        let btnStopId = "btnStop";
+        
         document.getElementById(readerId).classList.remove("hide");
         document.getElementById(btnStopId).classList.remove("hide");
 
-        html5QrcodeScanner = new Html5QrcodeScanner(readerId, { fps: 10, qrbox: { width: 250, height: 150 } });
+        // Inisialisasi scanner KASIR dengan widget kecil
+        html5QrcodeScannerKasir = new Html5QrcodeScanner(readerId, { 
+            fps: 10, 
+            qrbox: { width: 200, height: 100 }, // Scan area kecil
+            aspectRatio: 1.0 
+        });
 
-        html5QrcodeScanner
-          .render(onScanSuccess, (errorMessage) => {})
+        html5QrcodeScannerKasir
+          .render(onScanSuccessKasir, (errorMessage) => {})
           .catch((err) => {
             alert("Gagal akses kamera: " + err);
             stopScanKamera();
           });
       }
 
-      function onScanSuccess(decodedText) {
+      function onScanSuccessKasir(decodedText) {
         if (isScanning) return;
         isScanning = true;
         tampilkanStatusScan("Menunggu jeda scan...");
 
-        if (modeScan === "kasir") {
-          let barang = dbBarang.find((b) => b.barcode === decodedText);
-          if (barang) updateLastScannedCard(barang);
-          tambahKeStruk(decodedText);
-          setTimeout(() => { isScanning = false; hapusStatusScan(); }, SCAN_DELAY_MS);
-        } else {
-          // Scan untuk form lama (tab barang)
-          document.getElementById("barcode").value = decodedText;
-          cekKetersediaanBarcode();
-          stopScanKamera();
-          document.getElementById("nama").focus();
-          beep();
-          isScanning = false;
-          hapusStatusScan();
-        }
+        let barang = dbBarang.find((b) => b.barcode === decodedText);
+        if (barang) updateLastScannedCard(barang);
+        tambahKeStruk(decodedText);
+        setTimeout(() => { isScanning = false; hapusStatusScan(); }, SCAN_DELAY_MS);
       }
 
       function stopScanKamera() {
-        if (html5QrcodeScanner) {
-          html5QrcodeScanner
+        // Stop Scanner KASIR
+        if (html5QrcodeScannerKasir) {
+          html5QrcodeScannerKasir
             .clear()
             .then(() => {
               document.getElementById("reader").classList.add("hide");
-              document.getElementById("readerBarang").classList.add("hide");
               document.getElementById("btnStop").classList.add("hide");
-              document.getElementById("btnStopBarang").classList.add("hide");
-              html5QrcodeScanner = null;
+              html5QrcodeScannerKasir = null;
             })
-            .catch((err) => { html5QrcodeScanner = null; });
+            .catch((err) => { html5QrcodeScannerKasir = null; });
         }
+        
+        // Pastikan Scanner Modal juga dimatikan jika pindah tab (opsional, tapi aman)
+        // stopScanModal(); // Uncomment jika ingin mematikan modal scan saat pindah tab kasir
       }
 
       function tampilkanStatusScan(teks) {
@@ -957,6 +998,90 @@
           showToast("Stok diupdate!");
         }
       }
+
+      // --- MODAL SCANNER LOGIC ---
+      function mulaiScanModal() {
+        document.getElementById('readerBarangModal').style.display = 'block';
+        document.getElementById('btnScanModal').innerHTML = '🛑 Tutup Scan';
+        document.getElementById('btnScanModal').style.background = 'var(--danger)';
+        isScanningModal = true;
+
+        // Instance terpisah untuk Modal
+        html5QrcodeScannerModal = new Html5Qrcode("readerBarangModal");
+        html5QrcodeScannerModal.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (decodedText) => {
+          document.getElementById('modalBarcode').value = decodedText;
+          stopScanModal();
+        }).catch(err => {
+          alert("Gagal kamera modal: " + err);
+          stopScanModal();
+        });
+      }
+
+      function stopScanModal() {
+        if (html5QrcodeScannerModal) {
+          html5QrcodeScannerModal.stop().then(() => {
+            document.getElementById('readerBarangModal').style.display = 'none';
+            document.getElementById('btnScanModal').innerHTML = '📷 Scan Barcode';
+            document.getElementById('btnScanModal').style.background = ''; 
+            isScanningModal = false;
+            html5QrcodeScannerModal = null;
+          }).catch(err => console.error(err));
+        }
+      }
+
+      function toggleScanModal() {
+        if (isScanningModal) stopScanModal();
+        else mulaiScanModal();
+      }
+
+      function bukaModalTambahBarang() {
+        document.getElementById('modalTambahBarang').classList.add('show');
+        resetFormModal();
+      }
+      function tutupModalTambahBarang() {
+        document.getElementById('modalTambahBarang').classList.remove('show');
+        stopScanModal();
+      }
+      function resetFormModal() {
+        document.getElementById('modalBarcode').value = '';
+        document.getElementById('modalNama').value = '';
+        document.getElementById('modalKategori').value = '';
+        document.getElementById('modalHargaBeli').value = '';
+        document.getElementById('modalHargaJual').value = '';
+        document.getElementById('modalStok').value = '';
+        stopScanModal();
+      }
+
+      function simpanDariModal() {
+        let barcode = document.getElementById('modalBarcode').value.trim();
+        let nama = document.getElementById('modalNama').value.trim();
+        let kategori = document.getElementById('modalKategori').value;
+        let hargaBeli = parseInt(document.getElementById('modalHargaBeli').value) || 0;
+        let hargaJual = parseInt(document.getElementById('modalHargaJual').value) || 0;
+        let stok = parseInt(document.getElementById('modalStok').value) || 0;
+
+        if (!barcode || !nama || !kategori || hargaJual <= 0 || stok < 0) return alert("Mohon lengkapi data dengan benar.");
+
+        let idx = dbBarang.findIndex((b) => b.barcode === barcode);
+        if (idx >= 0) {
+          if(confirm(`Barcode ${barcode} sudah ada. Tambahkan stok sebesar ${stok}?`)) {
+             dbBarang[idx].stok += stok;
+             dbBarang[idx].nama = nama;
+             dbBarang[idx].kategori = kategori;
+             dbBarang[idx].hargaBeli = hargaBeli;
+             dbBarang[idx].hargaJual = hargaJual;
+          } else {
+            return;
+          }
+        } else {
+          dbBarang.push({ barcode, nama, kategori, hargaBeli, hargaJual, stok });
+        }
+
+        simpanDb();
+        showToast("Barang berhasil disimpan!");
+        tutupModalTambahBarang();
+      }
+
 
       // --- CORE KASIR ---
       document.getElementById("barcode").addEventListener("input", function () { cekKetersediaanBarcode(); });
@@ -1049,88 +1174,6 @@
         let bayar = parseInt(document.getElementById("bayar").value) || 0;
         let kembali = bayar - total;
         document.getElementById("kembalian").innerText = kembali > 0 ? kembali.toLocaleString() : 0;
-      }
-
-      // --- MODAL TAMBAH BARANG (NEW) ---
-      function bukaModalTambahBarang() {
-        document.getElementById('modalTambahBarang').classList.add('show');
-        resetFormModal();
-      }
-      function tutupModalTambahBarang() {
-        document.getElementById('modalTambahBarang').classList.remove('show');
-        stopScanModal();
-      }
-      function resetFormModal() {
-        document.getElementById('modalBarcode').value = '';
-        document.getElementById('modalNama').value = '';
-        document.getElementById('modalKategori').value = '';
-        document.getElementById('modalHargaBeli').value = '';
-        document.getElementById('modalHargaJual').value = '';
-        document.getElementById('modalStok').value = '';
-        stopScanModal();
-      }
-
-      function toggleScanModal() {
-        if (isScanningModal) stopScanModal();
-        else mulaiScanModal();
-      }
-
-      function mulaiScanModal() {
-        document.getElementById('readerBarangModal').style.display = 'block';
-        document.getElementById('btnScanModal').innerHTML = '🛑 Tutup Scan';
-        document.getElementById('btnScanModal').style.background = 'var(--danger)';
-        isScanningModal = true;
-
-        html5QrcodeScannerModal = new Html5Qrcode("readerBarangModal");
-        html5QrcodeScannerModal.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 150 } }, (decodedText) => {
-          document.getElementById('modalBarcode').value = decodedText;
-          stopScanModal();
-        }).catch(err => {
-          alert("Gagal kamera modal: " + err);
-          stopScanModal();
-        });
-      }
-
-      function stopScanModal() {
-        if (html5QrcodeScannerModal) {
-          html5QrcodeScannerModal.stop().then(() => {
-            document.getElementById('readerBarangModal').style.display = 'none';
-            document.getElementById('btnScanModal').innerHTML = '📷 Scan Barcode';
-            document.getElementById('btnScanModal').style.background = ''; // Reset to default CSS
-            isScanningModal = false;
-            html5QrcodeScannerModal = null;
-          }).catch(err => console.error(err));
-        }
-      }
-
-      function simpanDariModal() {
-        let barcode = document.getElementById('modalBarcode').value.trim();
-        let nama = document.getElementById('modalNama').value.trim();
-        let kategori = document.getElementById('modalKategori').value;
-        let hargaBeli = parseInt(document.getElementById('modalHargaBeli').value) || 0;
-        let hargaJual = parseInt(document.getElementById('modalHargaJual').value) || 0;
-        let stok = parseInt(document.getElementById('modalStok').value) || 0;
-
-        if (!barcode || !nama || !kategori || hargaJual <= 0 || stok < 0) return alert("Mohon lengkapi data dengan benar.");
-
-        let idx = dbBarang.findIndex((b) => b.barcode === barcode);
-        if (idx >= 0) {
-          if(confirm(`Barcode ${barcode} sudah ada. Tambahkan stok sebesar ${stok}?`)) {
-             dbBarang[idx].stok += stok;
-             dbBarang[idx].nama = nama;
-             dbBarang[idx].kategori = kategori;
-             dbBarang[idx].hargaBeli = hargaBeli;
-             dbBarang[idx].hargaJual = hargaJual;
-          } else {
-            return;
-          }
-        } else {
-          dbBarang.push({ barcode, nama, kategori, hargaBeli, hargaJual, stok });
-        }
-
-        simpanDb();
-        showToast("Barang berhasil disimpan!");
-        tutupModalTambahBarang();
       }
 
       // --- NAVIGASI BARU ---
@@ -1353,8 +1396,6 @@
       }
 
       function simpanBarang() {
-        // Fungsi ini dipertahankan untuk backward compatibility dengan form lama, 
-        // tapi user disarankan pakai Modal.
         let barcode = document.getElementById("barcode").value.trim();
         let nama = document.getElementById("nama").value.trim();
         let kategori = document.getElementById("kategoriInput").value;
@@ -1384,7 +1425,6 @@
       }
 
       function editBarang(i) {
-        // Redirect ke Modal Edit
         let b = dbBarang[i];
         document.getElementById('modalBarcode').value = b.barcode;
         document.getElementById('modalNama').value = b.nama;
