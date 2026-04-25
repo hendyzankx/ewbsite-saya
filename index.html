@@ -134,13 +134,23 @@
         width: auto !important;
         font-size: 12px !important;
       }
-      /* Tombol Edit Khusus untuk tabel struk */
-      .btn-edit-struk {
-        background: #0ea5e9 !important; /* Warna biru langit */
-        padding: 4px 8px !important;
+
+      /* Tombol Plus Minus Kecil */
+      .btn-qty-kecil {
+        background: var(--biru) !important; 
+        padding: 4px 10px !important;
         width: auto !important;
-        font-size: 12px !important;
-        margin-right: 4px;
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        margin: 0 2px !important;
+        min-width: 30px;
+      }
+      .btn-qty-kecil:hover {
+        opacity: 0.8;
+        transform: scale(1.1);
+      }
+      .btn-qty-minus {
+        background: #f59e0b !important; /* Warna Oranye untuk minus */
       }
 
       .btn-edit {
@@ -198,7 +208,7 @@
       /* Kolom aksi di struk agar rapi */
       td:last-child {
         white-space: nowrap;
-        width: 80px;
+        width: 110px; /* Lebar kolom aksi diperbesar sedikit */
         text-align: right;
       }
       .total-box {
@@ -521,7 +531,7 @@
     <div class="app">
       <div class="header no-print">
         <h1>💰 KASIR PRO OFFLINE</h1>
-        <small>Scan cepat, edit keranjang, pantau keuntungan otomatis</small>
+        <small>Scan cepat, atur jumlah, pantau keuntungan otomatis</small>
       </div>
 
       <div class="tabs no-print">
@@ -1383,41 +1393,38 @@
         renderStruk();
       }
 
-      // ===== EDIT JUMLAH DI KERANJANG =====
-      function editItemStruk(index) {
+      // ===== FUNGSI UNTUK TOMBOL PLUS/MINUS DI TABEL =====
+      
+      function kurangiJumlah(index) {
         let item = struk[index];
-        if (!item) return;
+        if (item.qty > 1) {
+          item.qty--;
+          renderStruk();
+        } else {
+          // Jika jumlah 1, kurangi berarti hapus item
+          // Optional: Bisa langsung hapus atau minta konfirmasi
+          // Disini kita biarkan user tekan tombol X untuk hapus agar tidak tidak sengaja
+          // Tapi logika umum kasir: jika tekan minus di 1, item hilang.
+          // Mari kita buat logika: jika 1, tanya hapus atau tidak hapus?
+          // Agar simple: Jangan biarkan kurang dari 1.
+        }
+      }
 
-        // Cek stok saat ini di database (nyata)
+      function tambahJumlah(index) {
+        let item = struk[index];
         let barangDb = dbBarang.find((b) => b.barcode === item.barcode);
-        let stokNyata = barangDb ? barangDb.stok : 0;
-
-        // Hitung sisa stok yang tersedia (stok nyata - yang sudah ada di keranjang)
-        // Karena item di keranjang akan diupdate, kita anggap sementara item tersebut 'dikembalikan' ke stok
-        // jadi stok tersedia = stok nyata.
-        // Namun jika user memasukkan angka yang lebih besar dari stok nyata, tolak.
         
-        let inputQty = prompt(
-          `Edit jumlah untuk: ${item.nama}\nStok Tersedia: ${stokNyata}`, 
-          item.qty
-        );
-
-        if (inputQty === null) return; // Batal
-
-        let qtyBaru = parseInt(inputQty);
-
-        if (isNaN(qtyBaru) || qtyBaru < 1) {
-          alert("Jumlah harus minimal 1");
-          return;
+        // Cek apakah stok gudang cukup untuk menambah 1 lagi
+        // Stok yang sedang 'dipesan' di keranjang adalah item.qty
+        // Sisa stok nyata = barangDb.stok
+        // Kita cek: (item.qty + 1) <= barangDb.stok ? 
+        if (barangDb && (item.qty + 1) <= barangDb.stok) {
+          item.qty++;
+          renderStruk();
+        } else {
+          let sisa = barangDb ? barangDb.stok : 0;
+          alert(`Stok tidak mencukupi!\nMaksimal bisa beli: ${sisa}`);
         }
-
-        if (qtyBaru > stokNyata) {
-          alert(`Stok tidak mencukupi! Stok gudang saat ini: ${stokNyata}`);
-          return;
-        }
-
-        item.qty = qtyBaru;
-        renderStruk();
       }
 
       function setUang(nominal) {
@@ -1439,9 +1446,10 @@
           totalJual += subtotal;
           totalModal += modalTotal;
           
-          // Kolom aksi: tombol edit dan hapus
+          // Tombol Plus Minus
           let btnAksi = `
-            <button class="btn-edit-struk" onclick="editItemStruk(${i})" title="Edit Jumlah">✏️</button>
+            <button class="btn-qty-kecil btn-qty-minus" onclick="kurangiJumlah(${i})">-</button>
+            <button class="btn-qty-kecil" onclick="tambahJumlah(${i})">+</button>
             <button class="btn-hapus" onclick="hapusItemStruk(${i})" title="Hapus">X</button>
           `;
 
@@ -1662,7 +1670,7 @@
         if (tanpaKat.length > 0) {
           let optgroup = document.createElement("optgroup");
           optgroup.label = "📦 Tanpa Kategori";
-          tanpaKat.forEach((b) => {
+          tanpaKat.forEach((b) {
             let opt = document.createElement("option");
             opt.value = b.barcode;
             opt.textContent = `${b.nama} - Rp${b.hargaJual.toLocaleString()} (Stok: ${b.stok})`;
