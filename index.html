@@ -50,12 +50,21 @@
       .header {
         background: linear-gradient(135deg, var(--biru), #1e40af);
         color: white;
-        padding: 20px;
+        padding: 25px 20px; /* Padding diperbesar sedikit */
         text-align: center;
       }
       .header h1 {
-        font-size: 22px;
-        font-weight: 700;
+        font-size: 26px; /* Ukuran font diperbesar */
+        font-weight: 800;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+      }
+      .header small {
+        font-size: 13px;
+        opacity: 0.9;
+        display: block; /* Agar alamat turun ke baris baru */
       }
       .tabs {
         display: flex;
@@ -324,6 +333,7 @@
         color: var(--hijau);
       }
 
+      /* ===== AREA CETAK STRUK ===== */
       #cetakStruk {
         display: none;
         padding: 20px;
@@ -331,13 +341,29 @@
       }
       #cetakStruk h2 {
         text-align: center;
-        margin-bottom: 10px;
+        margin-bottom: 5px;
+        font-size: 24px;
+        font-weight: bold;
+        text-transform: uppercase;
+      }
+      #cetakStruk .alamat-toko {
+        text-align: center;
+        font-size: 12px;
+        margin-bottom: 15px;
+        white-space: pre-line; /* Penting: Membaca baris baru (Enter) */
+        color: #000;
       }
       #cetakStruk table {
         width: 100%;
       }
+      #cetakStruk th, 
+      #cetakStruk td {
+        border-bottom: none; /* Bersihkan garis border tabel default */
+        padding: 4px 0;
+      }
       #cetakStruk hr {
-        border: 1px dashed #000;
+        border-top: 1px dashed #000;
+        border-bottom: none;
         margin: 10px 0;
       }
 
@@ -542,9 +568,10 @@
   </head>
   <body>
     <div class="app">
+      <!-- HEADER: Menampilkan Nama Toko dan Alamat -->
       <div class="header no-print">
-        <h1>💰 KASIR PRO OFFLINE</h1>
-        <small>Scan cepat, atur jumlah, pantau keuntungan otomatis</small>
+        <h1 id="headerNamaToko">💰 KASIR PRO OFFLINE</h1>
+        <small id="headerAlamatToko">Scan cepat, atur jumlah, pantau keuntungan otomatis</small>
       </div>
 
       <div class="tabs no-print">
@@ -553,6 +580,9 @@
         </button>
         <button onclick="gantiTab('barang')" id="tabBarang">Barang</button>
         <button onclick="gantiTab('laporan')" id="tabLaporan">Laporan</button>
+        <button onclick="gantiTab('pengaturan')" id="tabPengaturan">
+          ⚙️ Pengaturan
+        </button>
       </div>
 
       <div class="konten">
@@ -812,9 +842,51 @@
           </div>
         </div>
 
+        <!-- TAB PENGATURAN -->
+        <div id="pengaturan" class="hide no-print">
+          <div class="card">
+            <h3>⚙️ Pengaturan Toko</h3>
+            <p style="margin-bottom: 15px; font-size: 14px; color: #64748b;">
+              Ubah identitas toko dan tampilan struk.
+            </p>
+
+            <label style="font-weight: 600; font-size: 14px;">Nama Toko</label>
+            <input
+              type="text"
+              id="inputNamaToko"
+              placeholder="Contoh: Toko Berkah Jaya"
+            />
+
+            <label style="font-weight: 600; font-size: 14px;">Alamat / Catatan Kaki Struk</label>
+            <input
+              type="text"
+              id="inputAlamatToko"
+              placeholder="Contoh: Jl. Merdeka No. 12 | WA: 0812-3456-7890"
+            />
+
+            <button onclick="simpanPengaturanToko()" style="margin-top: 10px;">
+              💾 Simpan Perubahan
+            </button>
+            
+            <div style="margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 20px;">
+                <button onclick="resetDataAplikasi()" class="btn-hapus" style="background:#ef4444;">
+                    ⚠️ Reset Semua Data (Pabrik)
+                </button>
+                <small style="display:block; margin-top:5px; color:#ef4444;">
+                    Hati-hati! Ini akan menghapus semua barang dan laporan.
+                </small>
+            </div>
+          </div>
+        </div>
+
         <!-- AREA CETAK STRUK -->
         <div id="cetakStruk">
-          <h2>TOKO KASIR PRO</h2>
+          <!-- Judul Toko di Struk -->
+          <h2 id="judulStrukCetak">TOKO KASIR PRO</h2>
+          
+          <!-- Alamat Toko di Struk (AKAN TAMPIL DISINI) -->
+          <div id="alamatStrukCetak" class="alamat-toko"></div>
+          
           <hr />
           <table>
             <thead>
@@ -841,6 +913,13 @@
     </div>
 
     <script>
+      // ============================================
+      // KONFIGURASI TOKO (DEFAULT)
+      // ============================================
+      let namaToko = "TOKO MAJU JAYA";
+      let alamatToko = "Jl. Contoh No. 123\nTelp: 08123456789";
+      // ============================================
+
       // Daftar kategori default dengan emoji dan warna badge
       const DAFTAR_KATEGORI = [
         { nama: "Makanan", emoji: "🍜", kelas: "badge-makanan" },
@@ -868,6 +947,71 @@
       let barangTerpilihCari = null;
       let indeksDiangkat = -1;
       let filterKategoriAktif = "";
+
+      // --- INIT APLIKASI ---
+      // Set nama toko saat pertama kali load
+      window.addEventListener('DOMContentLoaded', () => {
+          loadPengaturanToko();
+          renderStruk(); // Init render
+          simpanDb(); // Init data if empty
+      });
+
+      // --- FUNGSI PENGATURAN TOKO ---
+      function loadPengaturanToko() {
+          // Cek LocalStorage untuk setting toko
+          let savedNama = localStorage.getItem("namaToko");
+          let savedAlamat = localStorage.getItem("alamatToko");
+
+          if (savedNama) namaToko = savedNama;
+          if (savedAlamat) alamatToko = savedAlamat;
+
+          // Terapkan ke UI
+          terapkanPengaturanToko();
+
+          // Isi form pengaturan dengan data saat ini
+          document.getElementById('inputNamaToko').value = namaToko;
+          document.getElementById('inputAlamatToko').value = alamatToko;
+      }
+
+      function terapkanPengaturanToko() {
+          // Terapkan ke Header Aplikasi
+          document.getElementById('headerNamaToko').innerText = namaToko;
+          
+          // Jika alamat toko ada, tampilkan di bawah nama toko. Jika tidak, tampilkan teks default.
+          if (alamatToko && alamatToko.trim() !== "") {
+              document.getElementById('headerAlamatToko').innerText = alamatToko;
+          } else {
+              document.getElementById('headerAlamatToko').innerText = "Scan cepat, atur jumlah, pantau keuntungan otomatis";
+          }
+
+          // Terapkan ke Struk Cetak
+          document.getElementById('judulStrukCetak').innerText = namaToko;
+          document.getElementById('alamatStrukCetak').innerText = alamatToko;
+      }
+
+      function simpanPengaturanToko() {
+          let namaBaru = document.getElementById('inputNamaToko').value.trim();
+          let alamatBaru = document.getElementById('inputAlamatToko').value.trim();
+
+          if (!namaBaru) return alert("Nama toko tidak boleh kosong!");
+
+          namaToko = namaBaru;
+          alamatToko = alamatBaru;
+
+          // Simpan ke LocalStorage
+          localStorage.setItem("namaToko", namaToko);
+          localStorage.setItem("alamatToko", alamatToko);
+
+          terapkanPengaturanToko();
+          alert("✅ Pengaturan toko berhasil disimpan!");
+      }
+
+      function resetDataAplikasi() {
+          if(confirm("Apakah Anda YAKIN ingin menghapus SEMUA data (Barang, Transaksi, dan Pengaturan)?\n\nData tidak bisa dikembalikan.")) {
+              localStorage.clear();
+              location.reload();
+          }
+      }
 
       // Data awal dengan kategori
       if (dbBarang.length === 0) {
@@ -1087,6 +1231,7 @@
           kasir: "tabKasir",
           barang: "tabBarang",
           laporan: "tabLaporan",
+          pengaturan: "tabPengaturan",
         };
         document.getElementById(tabId[tab]).classList.add("aktif");
         if (tab === "kasir")
