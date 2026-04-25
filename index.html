@@ -276,7 +276,7 @@
       }
       .uang-cepat button {
         background: #e2e8f0 !important;
-        color: #334155 !important;
+        color: #334550 !important;
         font-size: 14px !important;
         padding: 10px !important;
       }
@@ -1088,6 +1088,7 @@
 
         if (modeScan === "kasir") {
           tambahKeStruk(decodedText);
+          // UX FIX: Focus otomatis kembali ke scan input setelah scan
           document.getElementById("scanInput").focus();
           setTimeout(() => {
             isScanning = false;
@@ -1321,6 +1322,7 @@
         inputCari.value = "";
         barangTerpilihCari = null;
         qtyWrap.classList.add("hide");
+        // UX FIX: Focus otomatis kembali ke input pencarian setelah tambah
         inputCari.focus();
       }
 
@@ -1358,6 +1360,8 @@
         if (kode) {
           tambahKeStruk(kode, qty);
           document.getElementById("qtyManual").value = 1;
+          // UX FIX: Focus ke ScanInput setelah menambah barang manual dari dropdown
+          document.getElementById("scanInput").focus();
         }
       }
 
@@ -1398,15 +1402,15 @@
       function kurangiJumlah(index) {
         let item = struk[index];
         if (item.qty > 1) {
+          // Jika Qty > 1, kurangi saja 1
           item.qty--;
           renderStruk();
         } else {
-          // Jika jumlah 1, kurangi berarti hapus item
-          // Optional: Bisa langsung hapus atau minta konfirmasi
-          // Disini kita biarkan user tekan tombol X untuk hapus agar tidak tidak sengaja
-          // Tapi logika umum kasir: jika tekan minus di 1, item hilang.
-          // Mari kita buat logika: jika 1, tanya hapus atau tidak hapus?
-          // Agar simple: Jangan biarkan kurang dari 1.
+          // Jika Qty == 1, tanya konfirmasi hapus
+          // (Karena Qty 0 berarti barang dibatalkan dari struk)
+          if (confirm(`Hapus "${item.nama}" dari struk?`)) {
+            hapusItemStruk(index);
+          }
         }
       }
 
@@ -1466,6 +1470,7 @@
       function hapusItemStruk(i) {
         struk.splice(i, 1);
         renderStruk();
+        // UX FIX: Focus ke ScanInput setelah menghapus item dari struk
         document.getElementById("scanInput").focus();
       }
 
@@ -1510,15 +1515,13 @@
         tbodyCetak.innerHTML = "";
         struk.forEach((item) => {
           let sub = item.hargaJual * item.qty;
-          tbodyCetak.innerHTML += `<tr><td>${item.nama}</td><td>${item.qty}</td><td>Rp ${sub.toLocaleString()}</td></tr>`;
+          // Perbaikan Format Rupiah: Menggunakan toLocaleString('id-ID')
+          tbodyCetak.innerHTML += `<tr><td>${item.nama}</td><td>${item.qty}</td><td>Rp ${sub.toLocaleString('id-ID')}</td></tr>`;
         });
-        document.getElementById("totalCetak").innerText =
-          total.toLocaleString();
-        document.getElementById("bayarCetak").innerText =
-          bayar.toLocaleString();
-        document.getElementById("kembaliCetak").innerText = (
-          bayar - total
-        ).toLocaleString();
+        
+        document.getElementById("totalCetak").innerText = total.toLocaleString('id-ID');
+        document.getElementById("bayarCetak").innerText = bayar.toLocaleString('id-ID');
+        document.getElementById("kembaliCetak").innerText = (bayar - total).toLocaleString('id-ID');
       }
 
       function resetStruk() {
@@ -1649,28 +1652,46 @@
       function renderPilihBarang() {
         let select = document.getElementById("pilihBarang");
         select.innerHTML = '<option value="">-- Pilih Barang --</option>';
-        // Kelompokkan berdasarkan kategori
+        
+        // Ambil list kategori unik yang sudah ada
         let kategoriUnik = getKategoriUnik();
+        
+        // Set untuk melacak barang yang sudah dimasukkan ke dropdown (agar tidak duplikat)
+        let processedBarcodes = new Set();
+
+        // Loop kategori
         kategoriUnik.forEach((kat) => {
           let barangKat = dbBarang.filter((b) => b.kategori === kat);
           if (barangKat.length === 0) return;
+          
           let info = getInfoKategori(kat);
           let optgroup = document.createElement("optgroup");
           optgroup.label = `${info.emoji} ${kat}`;
+          
           barangKat.forEach((b) => {
-            let opt = document.createElement("option");
-            opt.value = b.barcode;
-            opt.textContent = `${b.nama} - Rp${b.hargaJual.toLocaleString()} (Stok: ${b.stok})`;
-            optgroup.appendChild(opt);
+            // Pastikan barang belum dimasukkan (handle jika ada data duplikat/error)
+            if (!processedBarcodes.has(b.barcode)) {
+              let opt = document.createElement("option");
+              opt.value = b.barcode;
+              opt.textContent = `${b.nama} - Rp${b.hargaJual.toLocaleString()} (Stok: ${b.stok})`;
+              optgroup.appendChild(opt);
+              processedBarcodes.add(b.barcode);
+            }
           });
           select.appendChild(optgroup);
         });
-        // Barang tanpa kategori
-        let tanpaKat = dbBarang.filter((b) => !b.kategori || b.kategori === "");
+
+        // Handle barang tanpa kategori (string kosong, null, atau undefined) yang belum tercover
+        // Cari barang yang belum ada di processedBarcodes
+        let tanpaKat = dbBarang.filter((b) => !b.kategori || b.kategori === "" || b.kategori === null || b.kategori === undefined);
+        
+        // Filter ulang untuk memastikan barang ini belum masuk ke optgroup manapun
+        tanpaKat = tanpaKat.filter((b) => !processedBarcodes.has(b.barcode));
+
         if (tanpaKat.length > 0) {
           let optgroup = document.createElement("optgroup");
           optgroup.label = "📦 Tanpa Kategori";
-          tanpaKat.forEach((b) {
+          tanpaKat.forEach((b) => {
             let opt = document.createElement("option");
             opt.value = b.barcode;
             opt.textContent = `${b.nama} - Rp${b.hargaJual.toLocaleString()} (Stok: ${b.stok})`;
@@ -1738,6 +1759,14 @@
           simpanDb();
         }
       }
+
+      // UX FIX: Tambah event listener untuk input qty manual agar fokus balik ke scan
+      document.getElementById("qtyManual").addEventListener("keypress", function (e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          tambahManual();
+        }
+      });
 
       renderStruk();
       simpanDb();
