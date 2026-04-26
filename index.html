@@ -5,11 +5,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Kasir Pro Secure Hybrid</title>
-    
+   
     <!-- Libraries -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
+   
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
     <style>
       :root {
@@ -18,23 +18,20 @@
       }
       * { box-sizing: border-box; margin: 0; padding: 0; font-family: "Inter", sans-serif; -webkit-tap-highlight-color: transparent; }
       body { background: var(--bg-app); font-size: 13px; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-      
-      /* Layout */
+     
       .app-container { background: white; display: flex; flex-direction: column; height: 100%; overflow: hidden; }
       .header { background: linear-gradient(135deg, var(--biru), var(--biru-dark)); color: white; padding: 15px; flex-shrink: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
       .header h1 { font-size: 18px; font-weight: 800; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
       .header small { font-size: 11px; opacity: 0.9; display: block; }
-      
-      /* Tabs */
+     
       .tabs { display: flex; background: #cbd5e1; flex-shrink: 0; overflow-x: auto; }
       .tabs button { flex: 1; padding: 12px 5px; border: none; background: transparent; font-weight: 600; cursor: pointer; font-size: 12px; color: var(--abu-dark); white-space: nowrap; transition: 0.2s; }
       .tabs button.aktif { background: white; color: var(--biru); border-top: 3px solid var(--biru); box-shadow: 0 -2px 5px rgba(0,0,0,0.05); }
-      
+     
       .content-area { flex: 1; overflow-y: auto; padding: 10px; position: relative; scroll-behavior: smooth; }
-      
-      /* Secure Status Bar */
+     
       .status-bar {
-        padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; 
+        padding: 8px 12px; border-radius: 6px; font-size: 11px; font-weight: bold;
         margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
         border: 1px solid; transition: 0.3s;
       }
@@ -42,58 +39,51 @@
       .status-offline { background: #fee2e2; color: #991b1b; border-color: #fecaca; }
       .badge-pending { background: var(--oren); color: white; padding: 2px 8px; border-radius: 12px; font-size: 10px; display: none; animation: pulse 2s infinite; }
       .badge-pending.show { display: inline-block; }
-      
+     
       @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
-
-      /* Inputs & Form Elements */
+     
       input, select, textarea { width: 100%; padding: 10px; margin: 4px 0 10px 0; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; background: white; transition: border 0.2s; }
       input:focus, select:focus, textarea:focus { border-color: var(--biru); outline: none; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
-      
+     
       button { width: 100%; padding: 12px; margin: 4px 0; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; color: white; background: var(--biru); transition: transform 0.1s, opacity 0.2s; display: flex; justify-content: center; align-items: center; gap: 5px; }
       button:active { transform: scale(0.98); }
-      button:hover { opacity: 0.9; }
       button:disabled { background: #94a3b8; cursor: not-allowed; opacity: 0.7; }
-      
+     
       .btn-kamera { background: var(--oren) !important; font-size: 11px; padding: 8px; margin-bottom: 10px; }
       .btn-hapus { background: var(--merah) !important; width: auto !important; padding: 4px 8px !important; font-size: 10px !important; display: inline-flex; }
       .btn-small { background: var(--biru) !important; width: auto !important; padding: 6px 12px; font-size: 11px; }
       .btn-success { background: var(--hijau) !important; }
       .btn-danger { background: var(--merah) !important; }
-      
-      /* Tables */
+     
       .table-responsive-wrapper { max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; margin-top: 5px; }
       table { width: 100%; border-collapse: collapse; background: white; font-size: 12px; }
       th { background: #f8fafc; position: sticky; top: 0; z-index: 10; text-align: left; font-size: 11px; padding: 8px; color: #475569; border-bottom: 2px solid #e2e8f0; }
       td { padding: 8px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
       tr:last-child td { border-bottom: none; }
-      
+     
       .hide { display: none !important; }
       .card { background: #f8fafc; padding: 12px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
       .card h3 { font-size: 14px; margin-bottom: 10px; color: #334155; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; }
-      
+     
       .total-box { background: var(--biru); color: white; padding: 12px; border-radius: 8px; margin: 10px 0; text-align: center; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
       .total-box .angka { font-size: 20px; font-weight: 700; letter-spacing: -0.5px; }
       .total-box .label { font-size: 10px; opacity: 0.8; text-transform: uppercase; }
       .total-box.hijau { background: var(--hijau); }
       .total-box.emas { background: var(--emas); }
-      
-      /* Scanner Area */
+     
       #reader, #readerBarang { width: 100%; border-radius: 8px; overflow: hidden; background: #000; margin-bottom: 10px; min-height: 150px; position: relative; }
       #reader video, #readerBarang video { object-fit: cover; width: 100%; height: 100%; }
-      
-      /* Modal */
+     
       .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 999; opacity: 0; pointer-events: none; transition: 0.3s; }
       .modal.show { opacity: 1; pointer-events: all; }
       .modal-content { background: white; padding: 20px; border-radius: 12px; width: 90%; max-width: 380px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); transform: translateY(20px); transition: 0.3s; }
       .modal.show .modal-content { transform: translateY(0); }
-      
-      /* Toast */
+     
       #toast {
         visibility: hidden; min-width: 250px; background-color: #1e293b; color: #fff; text-align: center; border-radius: 50px; padding: 12px 20px; position: fixed; z-index: 1000; left: 50%; bottom: 30px; transform: translateX(-50%) translateY(20px); font-size: 13px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); opacity: 0; transition: 0.3s;
       }
       #toast.show { visibility: visible; opacity: 1; transform: translateX(-50%) translateY(0); }
-      
-      /* Print Area */
+     
       @media print {
         body * { visibility: hidden; }
         #modalStruk, #modalStruk * { visibility: visible; }
@@ -104,26 +94,24 @@
     </style>
   </head>
   <body>
-
     <div class="app-container">
       <div class="header">
         <h1 id="headerNamaToko">KASIR PRO</h1>
-        <small id="headerInfoToko">Secure Hybrid Mode v2.2</small>
+        <small id="headerInfoToko">Secure Hybrid Mode v2.3</small>
       </div>
-
-      <!-- Secure Status Bar -->
+      
       <div id="connectionStatus" class="status-bar status-online">
           <span id="statusText">🟢 Online: Aman</span>
           <span id="pendingBadge" class="badge-pending">0 Pending</span>
       </div>
-
+      
       <div class="tabs">
         <button onclick="gantiTab('kasir')" id="tabKasir" class="aktif">🛒 Kasir</button>
         <button onclick="gantiTab('barang')" id="tabBarang">📦 Barang</button>
         <button onclick="gantiTab('laporan')" id="tabLaporan">📈 Laporan</button>
         <button onclick="gantiTab('pengaturan')" id="tabPengaturan">⚙️ Setting</button>
       </div>
-
+      
       <div class="content-area">
         <!-- TAB KASIR -->
         <div id="kasir">
@@ -131,10 +119,10 @@
             <h3>Input Transaksi</h3>
             <div style="display:flex; gap:5px;">
               <input type="text" id="scanInput" placeholder="Scan barcode / Ketik Nama..." autocomplete="off" style="flex:2" onkeypress="handleEnter(event)" />
-              <button id="btnToggleKameraKasir" class="btn-kamera" onclick="toggleCamera('reader')" style="flex:0">📷</button>
+              <button id="btnToggleKameraKasir" class="btn-kamera" onclick="toggleCamera('reader')" style="flex:0">📷 Kamera</button>
             </div>
             <div id="reader" class="hide"></div>
-            
+           
             <div id="manualKasirContainer">
                 <label style="font-size:11px; font-weight:bold; color:#64748b;">Pilih Manual:</label>
                 <select id="pilihBarang" onchange="tambahManual()">
@@ -146,13 +134,13 @@
                 </div>
             </div>
           </div>
-
+          
           <div class="card">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;">
                 <h3>Struk Belanja</h3>
                 <button class="btn-hapus" onclick="resetStruk()">Reset</button>
             </div>
-            
+           
             <div class="table-responsive-wrapper">
               <table id="tabelStruk">
                 <thead><tr><th>Item</th><th>Qty</th><th>Harga</th><th>Subtotal</th><th>Aksi</th></tr></thead>
@@ -160,7 +148,7 @@
               </table>
             </div>
             <div id="emptyCartMsg" style="text-align:center; padding:10px; color:#94a3b8; font-size:11px;">Belum ada barang</div>
-            
+           
             <div class="total-box">
                 <div class="label">Total Tagihan</div>
               <div class="angka">Rp <span id="totalHarga">0</span></div>
@@ -168,7 +156,7 @@
             <div class="total-box emas" style="padding:8px;">
               <div style="font-size:10px; text-align:left">Estimasi Laba: Rp <span id="labaStruk" style="float:right">0</span></div>
             </div>
-            
+           
             <input type="number" id="bayar" placeholder="Uang Diterima (Rp)" oninput="hitungKembali()" />
             <div class="total-box hijau">
               <div class="label">Kembalian</div>
@@ -183,11 +171,11 @@
           <div class="card">
             <h3>Input / Edit Barang</h3>
             <div style="display:flex; gap:5px;">
-                <input type="text" id="barcode" placeholder="Barcode" style="flex:1" oninput="cekJenisBarang()" />
+                <input type="text" id="barcode" placeholder="Barcode" style="flex:1" oninput="cekJenisBarangDebounce()" />
                 <button class="btn-kamera" onclick="toggleCamera('readerBarang')" style="width:40px;">📷</button>
             </div>
             <div id="readerBarang" class="hide"></div>
-            
+           
             <input type="text" id="nama" placeholder="Nama Barang" />
             <select id="kategoriInput">
               <option value="Makanan">🍜 Makanan</option>
@@ -201,13 +189,14 @@
                 <input type="number" id="hargaJual" placeholder="Jual (Rp)" min="0" />
             </div>
             <input type="number" id="stokInput" placeholder="Jumlah Stok Saat Ini" min="0" />
-            
+           
             <button onclick="simpanBarang()">💾 Simpan Barang</button>
             <button id="btnBatal" class="btn-danger hide" onclick="batalEdit()">Batal Edit</button>
           </div>
-
+          
           <div class="card">
             <h3>Daftar Barang (<span id="countBarang">0</span>)</h3>
+            <input type="text" id="cariBarang" placeholder="Cari nama atau barcode..." onkeyup="renderBarang()" style="margin-bottom:8px;" />
             <div class="table-responsive-wrapper">
                 <table id="tabelBarang">
                   <thead><tr><th>Code</th><th>Nama</th><th>Harga</th><th>Stok</th><th>Aksi</th></tr></thead>
@@ -228,14 +217,13 @@
             <button onclick="showToast('Data diekspor ke Sheet... (Simulasi)')">📊 Export ke Sheet</button>
             <button class="btn-hapus" onclick="hapusLaporan()">🗑️ Hapus Riwayat</button>
           </div>
-          
+         
           <div class="card">
              <h3>Grafik Penjualan</h3>
              <div style="height: 250px; width: 100%;">
                <canvas id="chartLaporan"></canvas>
              </div>
           </div>
-
           <div class="card">
             <h3>Riwayat Transaksi</h3>
             <div class="table-responsive-wrapper">
@@ -257,7 +245,7 @@
             <textarea id="inputInfoToko" rows="3" placeholder="Jl. Mawar No. 12&#10;Terima Kasih"></textarea>
             <button onclick="simpanPengaturan()">Simpan Pengaturan</button>
           </div>
-          
+         
           <div class="card">
             <h3>Sistem</h3>
             <button class="btn-danger" onclick="if(confirm('Hapus semua data offline?')) { localStorage.clear(); location.reload(); }">⚠️ Reset Aplikasi (Factory Reset)</button>
@@ -272,8 +260,7 @@
     <!-- MODAL STRUK -->
     <div id="modalStruk" class="modal">
         <div class="modal-content">
-            <div id="printArea" style="font-family: 'Courier New', monospace; border: 1px dashed #ccc; padding: 15px; background: #fff; margin-bottom: 15px; text-align: center;">
-                <!-- Print Content Injected via JS -->
+            <div id="printArea" style="font-family: 'Courier New', monospace; border: 1px dashed #ccc; padding: 15px; background: #fff; margin-bottom: 15px; text-align: center; font-size: 12px;">
             </div>
             <div style="display:flex; gap:10px;" class="no-print">
                 <button onclick="tutupModal()" style="background:#64748b;">Tutup</button>
@@ -284,107 +271,94 @@
 
 <script>
 // ==========================================
-// 1. CONFIG & MOCKING GOOGLE SCRIPT
+// CONFIG & CONSTANTS
 // ==========================================
 const LS_KEY_OFFLINE_TX = 'SECURE_OFFLINE_TX';
 const LS_KEY_OFFLINE_BARANG = 'SECURE_OFFLINE_BARANG';
 const LS_KEY_SETTINGS = 'SECURE_SETTINGS';
 
-let dbBarang = [
-  { barcode: '899123456', nama: 'Air Mineral 600ml', kategori: 'Minuman', hargaBeli: 2000, hargaJual: 3500, stok: 50 },
-  { barcode: '899654321', nama: 'Roti Coklat', kategori: 'Snack', hargaBeli: 3000, hargaJual: 5000, stok: 24 },
-  { barcode: '899000111', nama: 'Kopi Instan', kategori: 'Minuman', hargaBeli: 1000, hargaJual: 2000, stok: 100 }
-];
-
+let dbBarang = [];
 let dbTransaksi = [];
 let struk = [];
 let tokoData = { nama: 'Toko Demo', info: 'Jl. Digital No. 1\nTerima Kasih' };
 let chartInstance = null;
+let html5QrcodeScanner = null;
+let isCameraRunning = false;
+let debounceTimer = null;
 
 // ==========================================
-// 2. UTILITIES & SECURITY
+// UTILITIES
 // ==========================================
-const sanitize = (str) => String(str || "").replace(/[<>"'`]/g, "");
-const formatRupiah = (num) => Number(num).toLocaleString('id-ID');
-const playSound = (type) => {
-    try {
-        let ctx = new (window.AudioContext || window.webkitAudioContext)();
-        let osc = ctx.createOscillator();
-        let gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = type === 'error' ? 'sawtooth' : 'sine';
-        osc.frequency.value = type === 'error' ? 150 : 800;
-        gain.gain.value = 0.1;
-        osc.start();
-        setTimeout(() => osc.stop(), 100);
-    } catch(e) {}
-};
+const sanitize = (str) => String(str || "").replace(/[<>"'`]/g, "").trim();
+const formatRupiah = (num) => Number(num || 0).toLocaleString('id-ID');
+
+function playSound(type) {
+  try {
+    let ctx = new (window.AudioContext || window.webkitAudioContext)();
+    let osc = ctx.createOscillator();
+    let gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = type === 'error' ? 'sawtooth' : 'sine';
+    osc.frequency.value = type === 'error' ? 150 : 800;
+    gain.gain.value = 0.1;
+    osc.start();
+    setTimeout(() => osc.stop(), 100);
+  } catch(e) {}
+}
 
 function showToast(msg) {
   let t = document.getElementById("toast");
-  t.className = "show";
   t.innerText = msg;
-  setTimeout(() => { t.className = t.className.replace("show", ""); }, 3000);
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 3000);
 }
 
 // ==========================================
-// 3. GOOGLE SCRIPT MOCK (PERBAIKAN LOGIKA DATA)
+// GOOGLE SCRIPT MOCK (Hybrid Mode)
 // ==========================================
 if (typeof google === 'undefined') {
-  console.log("Mocking google.script.run for standalone mode");
   window.google = {
     script: {
       run: {
-        withSuccessHandler: (cb) => {
-          return {
-            withFailureHandler: (errCb) => {
-              return {
-                loadAppData: () => {
-                  const savedBarang = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG) || '[]');
-                  const savedTx = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_TX) || '[]');
-                  const savedSettings = JSON.parse(localStorage.getItem(LS_KEY_SETTINGS) || '{}');
-                  if(savedSettings.nama) tokoData = savedSettings;
+        withSuccessHandler: (cb) => ({
+          withFailureHandler: (errCb) => ({
+            loadAppData: () => {
+              const savedBarang = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG) || '[]');
+              const savedTx = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_TX) || '[]');
+              const savedSettings = JSON.parse(localStorage.getItem(LS_KEY_SETTINGS) || '{}');
+              if(savedSettings.nama) tokoData = savedSettings;
 
-                  // PERBAIKAN PENTING: Deduplikasi Barang berdasarkan Barcode
-                  // Jika ada barang di dbBarang (default) dan di savedBarang (user input) dengan barcode sama,
-                  // gunakan yang di savedBarang (Update), bukan menduplikat.
-                  let allBarang = [...dbBarang, ...savedBarang];
-                  let uniqueBarangMap = new Map();
-                  allBarang.forEach(item => uniqueBarangMap.set(item.barcode, item));
-                  let finalBarang = Array.from(uniqueBarangMap.values());
-
-                  cb({
-                    barang: finalBarang,
-                    transaksi: savedTx,
-                    toko: tokoData
-                  });
-                },
-                saveTransaction: (tx) => { setTimeout(() => cb({ success: true }), 500); },
-                saveProduct: (prod) => {
-                  let cache = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG) || '[]');
-                  let idx = cache.findIndex(x => x.barcode === prod.barcode);
-                  if(idx >= 0) cache[idx] = prod;
-                  else cache.push(prod);
-                  localStorage.setItem(LS_KEY_OFFLINE_BARANG, JSON.stringify(cache));
-                  setTimeout(() => cb({ success: true }), 500);
-                },
-                syncOfflineData: (data) => { setTimeout(() => cb({ success: true }), 1000); },
-                saveSettings: (settings) => {
-                   localStorage.setItem(LS_KEY_SETTINGS, JSON.stringify(settings));
-                   setTimeout(() => cb({ success: true }), 500);
-                }
-              }
+              let allBarang = [...dbBarang, ...savedBarang];
+              let uniqueBarangMap = new Map();
+              allBarang.forEach(item => uniqueBarangMap.set(item.barcode, item));
+              cb({
+                barang: Array.from(uniqueBarangMap.values()),
+                transaksi: savedTx,
+                toko: tokoData
+              });
+            },
+            saveTransaction: (tx) => setTimeout(() => cb({ success: true }), 300),
+            saveProduct: (prod) => {
+              let cache = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG) || '[]');
+              let idx = cache.findIndex(x => x.barcode === prod.barcode);
+              if(idx >= 0) cache[idx] = prod; else cache.push(prod);
+              localStorage.setItem(LS_KEY_OFFLINE_BARANG, JSON.stringify(cache));
+              setTimeout(() => cb({ success: true }), 300);
+            },
+            syncOfflineData: () => setTimeout(() => cb({ success: true }), 800),
+            saveSettings: (settings) => {
+              localStorage.setItem(LS_KEY_SETTINGS, JSON.stringify(settings));
+              setTimeout(() => cb({ success: true }), 300);
             }
-          }
-        }
+          })
+        })
       }
     }
   };
 }
 
 // ==========================================
-// 4. INITIALIZATION
+// INITIALIZATION
 // ==========================================
 window.onload = function() {
   updateOnlineStatus();
@@ -399,20 +373,16 @@ function gantiTab(tabId) {
     document.getElementById(id).classList.add('hide');
     document.getElementById('tab' + id.charAt(0).toUpperCase() + id.slice(1)).classList.remove('aktif');
   });
-  
   document.getElementById(tabId).classList.remove('hide');
   document.getElementById('tab' + tabId.charAt(0).toUpperCase() + tabId.slice(1)).classList.add('aktif');
-
-  if(tabId !== 'kasir' && tabId !== 'barang') {
-    stopCamera();
-  }
-
+  
+  stopCamera();
   if(tabId === 'laporan') renderLaporan();
   if(tabId === 'barang') renderBarang();
 }
 
 // ==========================================
-// 5. STATUS & SYNC
+// STATUS & SYNC
 // ==========================================
 function updateOnlineStatus() {
   const statusBar = document.getElementById('connectionStatus');
@@ -440,28 +410,24 @@ function updatePendingBadge() {
 }
 
 function attemptSync() {
-  if (typeof google === 'undefined' || !navigator.onLine) return; 
+  if (!navigator.onLine) return;
   let offlineTx = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_TX) || '[]');
   let offlineBarang = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG) || '[]');
   if (offlineTx.length === 0 && offlineBarang.length === 0) return;
 
   google.script.run
-    .withSuccessHandler(function(res) {
-      if (res && res.success) {
-        showToast("Sinkronisasi Berhasil!");
-        localStorage.removeItem(LS_KEY_OFFLINE_TX);
-        localStorage.removeItem(LS_KEY_OFFLINE_BARANG);
-        loadCloudData(); 
-      }
+    .withSuccessHandler(() => {
+      showToast("✅ Sinkronisasi Berhasil!");
+      localStorage.removeItem(LS_KEY_OFFLINE_TX);
+      localStorage.removeItem(LS_KEY_OFFLINE_BARANG);
+      loadCloudData();
     })
-    .withFailureHandler(function() {
-      showToast("Gagal Sinkronisasi");
-    })
-    .syncOfflineData(offlineTx, offlineBarang);
+    .withFailureHandler(() => showToast("❌ Gagal Sinkronisasi"))
+    .syncOfflineData();
 }
 
 // ==========================================
-// 6. DATA LOADING
+// DATA LOADING
 // ==========================================
 function loadCloudData() {
   google.script.run.withSuccessHandler(function(data) {
@@ -472,12 +438,11 @@ function loadCloudData() {
     let offlineTx = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_TX) || '[]');
     
     let map = new Map();
-    cloudTx.forEach(t => map.set(t.id, t));
-    offlineTx.forEach(t => map.set(t.id, t)); 
+    [...cloudTx, ...offlineTx].forEach(t => map.set(t.id, t));
     dbTransaksi = Array.from(map.values()).sort((a,b) => new Date(b.waktuISO) - new Date(a.waktuISO));
 
     document.getElementById('headerNamaToko').innerText = tokoData.nama || "KASIR PRO";
-    document.getElementById('headerInfoToko').innerText = tokoData.info || "Secure Hybrid Mode";
+    document.getElementById('headerInfoToko').innerText = tokoData.info || "Secure Hybrid Mode v2.3";
     document.getElementById('inputNamaToko').value = tokoData.nama || "";
     document.getElementById('inputInfoToko').value = tokoData.info || "";
 
@@ -488,11 +453,11 @@ function loadCloudData() {
 }
 
 // ==========================================
-// 7. KASIR LOGIC
+// KASIR LOGIC
 // ==========================================
 function handleEnter(e) {
   if(e.key === 'Enter') {
-    let code = document.getElementById('scanInput').value;
+    let code = sanitize(document.getElementById('scanInput').value);
     if(code) {
       tambahKeStruk(code, 1);
       document.getElementById('scanInput').value = '';
@@ -512,25 +477,23 @@ function populateSelectBarang() {
 }
 
 function tambahKeStruk(barcode, qty = 1) {
-  qty = parseInt(qty);
-  let barang = dbBarang.find(b => b.barcode == barcode);
-  
+  qty = parseInt(qty) || 1;
+  let barang = dbBarang.find(b => b.barcode === barcode);
   if(!barang) {
     playSound('error');
     return showToast("⚠️ Barang tidak ditemukan!");
   }
 
-  let itemInCart = struk.find(s => s.barcode == barcode);
-  let currentQtyInCart = itemInCart ? itemInCart.qty : 0;
+  let itemInCart = struk.find(s => s.barcode === barcode);
+  let currentQty = itemInCart ? itemInCart.qty : 0;
 
-  if (barang.stok < currentQtyInCart + qty) {
+  if (barang.stok < currentQty + qty) {
     playSound('error');
-    return showToast(`⚠️ Stok tidak cukup! Sisa: ${barang.stok}`);
+    return showToast(`⚠️ Stok tidak cukup! Sisa: ${barang.stok - currentQty}`);
   }
 
-  if(itemInCart) {
-    itemInCart.qty += qty;
-  } else {
+  if(itemInCart) itemInCart.qty += qty;
+  else {
     struk.push({
       barcode: barang.barcode,
       nama: sanitize(barang.nama),
@@ -539,25 +502,20 @@ function tambahKeStruk(barcode, qty = 1) {
       qty: qty
     });
   }
-
   playSound('success');
   renderStruk();
 }
 
 function tambahManual() {
   let code = document.getElementById('pilihBarang').value;
-  let qty = document.getElementById('qtyManual').value;
-  if(code && qty > 0) {
-    tambahKeStruk(code, qty);
-    document.getElementById('pilihBarang').value = "";
-  }
+  let qty = parseInt(document.getElementById('qtyManual').value) || 1;
+  if(code && qty > 0) tambahKeStruk(code, qty);
 }
 
 function renderStruk() {
   const tbody = document.getElementById('tbodyStruk');
   tbody.innerHTML = '';
-  let total = 0;
-  let laba = 0;
+  let total = 0, laba = 0;
 
   if(struk.length === 0) {
     document.getElementById('emptyCartMsg').style.display = 'block';
@@ -567,7 +525,6 @@ function renderStruk() {
       let sub = item.hargaJual * item.qty;
       total += sub;
       laba += (item.hargaJual - item.hargaBeli) * item.qty;
-
       let tr = document.createElement('tr');
       tr.innerHTML = `
         <td><b>${item.nama}</b></td>
@@ -579,7 +536,6 @@ function renderStruk() {
       tbody.appendChild(tr);
     });
   }
-
   document.getElementById('totalHarga').innerText = formatRupiah(total);
   document.getElementById('labaStruk').innerText = formatRupiah(laba);
   hitungKembali();
@@ -598,28 +554,32 @@ function resetStruk() {
 }
 
 function hitungKembali() {
-  let total = struk.reduce((a,b)=>a+(b.hargaJual||0)*(b.qty||0),0); // Safety check for NaN
-  let bayar = Number(document.getElementById('bayar').value);
+  let total = struk.reduce((a,b) => a + (b.hargaJual||0)*(b.qty||0), 0);
+  let bayar = Number(document.getElementById('bayar').value) || 0;
   let kembali = bayar - total;
-  let elKembali = document.getElementById('kembalian');
-  elKembali.innerText = formatRupiah(kembali < 0 ? 0 : kembali);
-  if(kembali < 0) elKembali.style.color = '#ef4444'; 
-  else elKembali.style.color = 'white';
+  let el = document.getElementById('kembalian');
+  el.innerText = formatRupiah(Math.max(kembali, 0));
+  el.style.color = kembali < 0 ? '#ef4444' : 'white';
 }
 
 function selesaiTransaksi() {
   if(struk.length === 0) return showToast("Keranjang kosong!");
-  let total = struk.reduce((a,b)=>a+(b.hargaJual||0)*(b.qty||0),0);
-  let bayar = Number(document.getElementById('bayar').value);
+  
+  let total = struk.reduce((a,b) => a + (b.hargaJual||0)*(b.qty||0), 0);
+  let bayar = Number(document.getElementById('bayar').value) || 0;
+  
   if(bayar < total) return showToast("Uang pembayaran kurang!");
+  if(isNaN(bayar) || bayar <= 0) return showToast("Masukkan jumlah uang yang valid!");
 
   let transaksi = {
     id: Date.now() + "-" + Math.random().toString(16).slice(2),
     waktuISO: new Date().toISOString(),
     waktu: new Date().toLocaleString('id-ID'),
-    totalJual: total, uangBayar: bayar, kembalian: bayar - total,
-    totalModal: struk.reduce((a,b)=>a+(b.hargaBeli||0)*(b.qty||0),0),
-    laba: total - struk.reduce((a,b)=>a+(b.hargaBeli||0)*(b.qty||0),0),
+    totalJual: total,
+    uangBayar: bayar,
+    kembalian: bayar - total,
+    totalModal: struk.reduce((a,b) => a + (b.hargaBeli||0)*(b.qty||0), 0),
+    laba: total - struk.reduce((a,b) => a + (b.hargaBeli||0)*(b.qty||0), 0),
     itemList: JSON.parse(JSON.stringify(struk))
   };
 
@@ -628,7 +588,7 @@ function selesaiTransaksi() {
   btn.disabled = true;
   btn.innerHTML = "⏳ Memproses...";
 
-  let processSuccess = () => {
+  const processSuccess = () => {
     transaksi.itemList.forEach(item => {
       let b = dbBarang.find(x => x.barcode === item.barcode);
       if(b) b.stok -= item.qty;
@@ -643,11 +603,14 @@ function selesaiTransaksi() {
     btn.disabled = false;
     btn.innerHTML = originalText;
     playSound('success');
+    updatePendingBadge();
   };
 
   if(navigator.onLine) {
-    google.script.run.withSuccessHandler(() => { processSuccess(); updatePendingBadge(); })
-    .withFailureHandler(() => { saveOffline(transaksi); processSuccess(); }).saveTransaction(transaksi);
+    google.script.run
+      .withSuccessHandler(() => processSuccess())
+      .withFailureHandler(() => { saveOffline(transaksi); processSuccess(); })
+      .saveTransaction(transaksi);
   } else {
     saveOffline(transaksi);
     processSuccess();
@@ -658,78 +621,72 @@ function saveOffline(t) {
   let offline = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_TX)||'[]');
   offline.push(t);
   localStorage.setItem(LS_KEY_OFFLINE_TX, JSON.stringify(offline));
-  dbTransaksi.unshift(t); 
-  updatePendingBadge();
+  dbTransaksi.unshift(t);
   showToast("💾 Disimpan Offline (Pending Sync)");
 }
 
 // ==========================================
-// 8. BARANG MANAGEMENT (FIX: SIMPAN BARANG)
+// BARANG MANAGEMENT
 // ==========================================
 function simpanBarang() {
-  // Ambil value dan sanitasi
-  let barcode = sanitize(document.getElementById('barcode').value).trim(); // PERBAIKAN: Trim spasi
-  let nama = sanitize(document.getElementById('nama').value).trim();
+  let barcode = sanitize(document.getElementById('barcode').value);
+  let nama = sanitize(document.getElementById('nama').value);
   let kategori = document.getElementById('kategoriInput').value;
   let beli = Number(document.getElementById('hargaBeli').value);
   let jual = Number(document.getElementById('hargaJual').value);
   let stok = Number(document.getElementById('stokInput').value);
 
-  // PERBAIKAN: Validasi Ketat untuk mencegah Error
   if (!barcode) return showToast("⚠️ Barcode wajib diisi!");
   if (!nama) return showToast("⚠️ Nama barang wajib diisi!");
-  
-  // Cek apakah angka valid (bukan NaN) dan tidak negatif
-  if (isNaN(beli) || beli < 0) return showToast("⚠️ Harga Modal harus angka valid (>= 0)!");
-  if (isNaN(jual) || jual < 0) return showToast("⚠️ Harga Jual harus angka valid (>= 0)!");
-  if (isNaN(stok) || stok < 0) return showToast("⚠️ Stok harus angka valid!");
+  if (isNaN(beli) || beli < 0) return showToast("⚠️ Harga Modal harus >= 0!");
+  if (isNaN(jual) || jual < 0) return showToast("⚠️ Harga Jual harus >= 0!");
+  if (isNaN(stok) || stok < 0) return showToast("⚠️ Stok harus >= 0!");
 
   let data = { barcode, nama, kategori, hargaBeli: beli, hargaJual: jual, stok };
 
-  // Simpan Lokal (Untuk Mode Hybrid)
-  let cache = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG)||'[]');
-  let idx = cache.findIndex(x => x.barcode === barcode);
-  if(idx >= 0) cache[idx] = data; // Update
-  else cache.push(data); // Insert
-  
-  localStorage.setItem(LS_KEY_OFFLINE_BARANG, JSON.stringify(cache));
-  
-  // Update Memory (Langsung tampil tanpa reload)
+  // Update memory
   let memIdx = dbBarang.findIndex(x => x.barcode === barcode);
   if(memIdx >= 0) dbBarang[memIdx] = data;
   else dbBarang.push(data);
-  
+
+  // Save to localStorage
+  let cache = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG)||'[]');
+  let idx = cache.findIndex(x => x.barcode === barcode);
+  if(idx >= 0) cache[idx] = data; else cache.push(data);
+  localStorage.setItem(LS_KEY_OFFLINE_BARANG, JSON.stringify(cache));
+
   renderBarang();
-  populateSelectBarang(); // Update dropdown kasir
-  batalEdit(); // Reset form
+  populateSelectBarang();
+  batalEdit();
 
-  // Kirim ke server/Mock jika Online
-  if(!navigator.onLine) {
-     return showToast("💾 Tersimpan Offline");
+  if(navigator.onLine) {
+    google.script.run.withSuccessHandler(() => showToast("✅ Barang tersimpan & tersinkron!"))
+      .withFailureHandler(() => showToast("✅ Tersimpan secara lokal"))
+      .saveProduct(data);
+  } else {
+    showToast("💾 Tersimpan Offline");
   }
-
-  google.script.run.withSuccessHandler(() => {
-    showToast("✅ Barang Tersimpan & Tersinkron!");
-  }).withFailureHandler(() => {
-    showToast("✅ Tersimpan Local (Server Error)");
-  }).saveProduct(data);
 }
 
 function renderBarang() {
+  const search = sanitize(document.getElementById('cariBarang').value).toLowerCase();
   const tbody = document.getElementById('tbodyBarang');
   tbody.innerHTML = '';
-  document.getElementById('countBarang').innerText = dbBarang.length;
+  
+  const filtered = dbBarang.filter(b => 
+    b.nama.toLowerCase().includes(search) || b.barcode.includes(search)
+  );
 
-  dbBarang.forEach((b, idx) => {
+  document.getElementById('countBarang').innerText = filtered.length;
+
+  filtered.forEach(b => {
     let tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${b.barcode}</td>
       <td>${b.nama}</td>
       <td>${formatRupiah(b.hargaJual)}</td>
       <td style="color:${b.stok < 5 ? 'red':'inherit'}">${b.stok}</td>
-      <td>
-        <button class="btn-small" onclick="editBarang('${b.barcode}')">✏️</button>
-      </td>
+      <td><button class="btn-small" onclick="editBarang('${b.barcode}')">✏️</button></td>
     `;
     tbody.appendChild(tr);
   });
@@ -738,14 +695,12 @@ function renderBarang() {
 function editBarang(code) {
   let b = dbBarang.find(x => x.barcode === code);
   if(!b) return;
-  
   document.getElementById('barcode').value = b.barcode;
   document.getElementById('nama').value = b.nama;
   document.getElementById('kategoriInput').value = b.kategori;
   document.getElementById('hargaBeli').value = b.hargaBeli;
   document.getElementById('hargaJual').value = b.hargaJual;
   document.getElementById('stokInput').value = b.stok;
-  
   document.getElementById('btnBatal').classList.remove('hide');
   window.scrollTo(0,0);
 }
@@ -759,25 +714,29 @@ function batalEdit() {
   document.getElementById('btnBatal').classList.add('hide');
 }
 
-function cekJenisBarang() {
-  let code = document.getElementById('barcode').value.trim();
-  let b = dbBarang.find(x => x.barcode === code);
-  if(b) editBarang(code);
-}
+let cekJenisBarangDebounce = () => {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => {
+    let code = sanitize(document.getElementById('barcode').value);
+    if(code.length > 3) {
+      let b = dbBarang.find(x => x.barcode === code);
+      if(b) editBarang(code);
+    }
+  }, 400);
+};
 
 // ==========================================
-// 9. LAPORAN & CHART
+// LAPORAN & CHART
 // ==========================================
 function renderLaporan() {
-  let total = 0;
-  let laba = 0;
+  let total = 0, laba = 0;
   const tbody = document.getElementById('tbodyLaporan');
   tbody.innerHTML = '';
-
+  
   let recentTx = dbTransaksi.slice(0, 50);
   recentTx.forEach(t => {
-    total += t.totalJual;
-    laba += t.laba;
+    total += t.totalJual || 0;
+    laba += t.laba || 0;
     let tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${t.waktu.split(',')[1] || t.waktu}</td>
@@ -787,7 +746,7 @@ function renderLaporan() {
     `;
     tbody.appendChild(tr);
   });
-
+  
   document.getElementById('totalOmset').innerText = formatRupiah(total);
   document.getElementById('totalLaba').innerText = formatRupiah(laba);
   updateChart(dbTransaksi);
@@ -796,10 +755,9 @@ function renderLaporan() {
 function updateChart(data) {
   const ctx = document.getElementById('chartLaporan').getContext('2d');
   let labels = data.slice(0, 10).map(t => t.waktu.split(',')[1] || t.waktu);
-  let values = data.slice(0, 10).map(t => t.totalJual);
+  let values = data.slice(0, 10).map(t => t.totalJual || 0);
 
   if (chartInstance) chartInstance.destroy();
-
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -812,15 +770,19 @@ function updateChart(data) {
       }]
     },
     options: {
-      responsive: true, maintainAspectRatio: false,
+      responsive: true,
+      maintainAspectRatio: false,
       plugins: { legend: { display: false } },
-      scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
+      scales: { 
+        y: { beginAtZero: true, grid: { display: false } }, 
+        x: { grid: { display: false } } 
+      }
     }
   });
 }
 
 function hapusLaporan() {
-  if(confirm("Hapus semua riwayat transaksi lokal?")) {
+  if(confirm("Hapus semua riwayat transaksi?")) {
     dbTransaksi = [];
     localStorage.removeItem(LS_KEY_OFFLINE_TX);
     renderLaporan();
@@ -829,35 +791,35 @@ function hapusLaporan() {
 }
 
 // ==========================================
-// 10. PRINTING & MODAL
+// PRINTING
 // ==========================================
 function preparePrint(tx) {
   let html = `
     <h2 style="margin-bottom:5px">${tokoData.nama}</h2>
     <div style="font-size:11px; margin-bottom:10px; white-space: pre-line;">${tokoData.info}</div>
-    <div style="border-bottom:1px dashed #000; margin-bottom:5px;"></div>
-    <div style="text-align:left; font-size:12px; margin-bottom:5px;">Tgl: ${tx.waktu}<br>ID: ${tx.id}</div>
-    <div style="border-bottom:1px dashed #000; margin-bottom:5px;"></div>
-    <table style="width:100%; font-size:12px; margin-bottom:10px;">
+    <div style="border-bottom:1px dashed #000; margin-bottom:8px;"></div>
+    <div style="text-align:left; font-size:12px;">Tgl: ${tx.waktu}<br>ID: ${tx.id}</div>
+    <div style="border-bottom:1px dashed #000; margin:8px 0;"></div>
+    <table style="width:100%; font-size:12px;">
   `;
-  
+
   tx.itemList.forEach(item => {
     html += `
-      <tr><td colspan="2" style="text-align:left; padding:2px 0;">${item.nama}</td></tr>
+      <tr><td colspan="2" style="text-align:left; padding:3px 0;">${item.nama}</td></tr>
       <tr>
-        <td style="text-align:left; padding:0;">${item.qty} x ${item.hargaJual}</td>
-        <td style="text-align:right; padding:0;">${item.qty * item.hargaJual}</td>
+        <td style="text-align:left;">${item.qty} x ${formatRupiah(item.hargaJual)}</td>
+        <td style="text-align:right;">${formatRupiah(item.qty * item.hargaJual)}</td>
       </tr>
     `;
   });
 
   html += `</table>
-    <div style="border-bottom:1px dashed #000; margin-bottom:5px;"></div>
-    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px;"><span>TOTAL</span><span>${formatRupiah(tx.totalJual)}</span></div>
-    <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:2px;"><span>Tunai</span><span>${formatRupiah(tx.uangBayar)}</span></div>
-    <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:2px;"><span>Kembali</span><span>${formatRupiah(tx.kembalian)}</span></div>
-    <div style="border-bottom:1px dashed #000; margin-top:10px; margin-bottom:5px;"></div>
-    <div style="font-size:10px; text-align:center;">*** TERIMA KASIH ***</div>
+    <div style="border-bottom:1px dashed #000; margin:8px 0;"></div>
+    <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>TOTAL</span><span>${formatRupiah(tx.totalJual)}</span></div>
+    <div style="display:flex; justify-content:space-between; font-size:12px;"><span>Tunai</span><span>${formatRupiah(tx.uangBayar)}</span></div>
+    <div style="display:flex; justify-content:space-between; font-size:12px;"><span>Kembali</span><span>${formatRupiah(tx.kembalian)}</span></div>
+    <div style="border-bottom:1px dashed #000; margin-top:10px;"></div>
+    <div style="font-size:10px; text-align:center; margin-top:8px;">*** TERIMA KASIH ***</div>
   `;
   document.getElementById('printArea').innerHTML = html;
 }
@@ -867,51 +829,50 @@ function tutupModal() {
 }
 
 // ==========================================
-// 11. CAMERA SCANNER
+// CAMERA SCANNER (Improved)
 // ==========================================
-let html5QrcodeScanner = null;
-let isCameraRunning = false;
-
 function toggleCamera(elementId) {
   const readerEl = document.getElementById(elementId);
   if (!isCameraRunning) {
     readerEl.classList.remove('hide');
     startCamera(elementId);
   } else {
-    readerEl.classList.add('hide');
     stopCamera();
+    readerEl.classList.add('hide');
   }
 }
 
 function startCamera(elementId) {
   stopCamera();
   if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-    alert("⚠️ Kamera butuh HTTPS/Localhost.");
-    stopCamera();
+    showToast("⚠️ Kamera memerlukan HTTPS atau Localhost");
     return;
   }
 
   html5QrcodeScanner = new Html5Qrcode(elementId);
   const config = { fps: 10, qrbox: { width: 250, height: 150 } };
-  
-  html5QrcodeScanner.start({ facingMode: "environment" }, config, 
+
+  html5QrcodeScanner.start(
+    { facingMode: "environment" },
+    config,
     (decodedText) => {
       playSound('success');
       if(elementId === 'reader') {
-        tambahKeStruk(decodedText, 1);
+        tambahKeStruk(decodedText.trim(), 1);
       } else {
-        document.getElementById('barcode').value = decodedText;
-        cekJenisBarang();
+        document.getElementById('barcode').value = decodedText.trim();
+        cekJenisBarangDebounce();
         stopCamera();
+        document.getElementById('readerBarang').classList.add('hide');
       }
     },
-    (errorMessage) => {}
+    () => {}
   ).then(() => {
     isCameraRunning = true;
     updateCameraButton(true);
   }).catch(err => {
-    console.error("Camera Error:", err);
-    showToast("Gagal buka kamera: " + err);
+    console.error(err);
+    showToast("❌ Gagal membuka kamera: " + err.message);
     stopCamera();
   });
 }
@@ -923,42 +884,42 @@ function stopCamera() {
       html5QrcodeScanner = null;
       isCameraRunning = false;
       updateCameraButton(false);
-    }).catch(err => {
-        console.error(err);
-        isCameraRunning = false;
-        updateCameraButton(false);
+    }).catch(() => {
+      isCameraRunning = false;
+      updateCameraButton(false);
     });
   }
 }
 
 function updateCameraButton(active) {
-    const btn = document.getElementById('btnToggleKameraKasir');
-    if(active) {
-        btn.style.background = "#dc2626"; 
-        btn.innerHTML = "⏹️ Stop";
-    } else {
-        btn.style.background = "#ea580c"; 
-        btn.innerHTML = "📷";
-    }
+  const btn = document.getElementById('btnToggleKameraKasir');
+  if(active) {
+    btn.style.background = "#dc2626";
+    btn.innerHTML = "⏹️ Stop Kamera";
+  } else {
+    btn.style.background = "#ea580c";
+    btn.innerHTML = "📷 Kamera";
+  }
 }
 
 // ==========================================
-// 12. SETTINGS
+// SETTINGS
 // ==========================================
 function simpanPengaturan() {
   tokoData.nama = sanitize(document.getElementById('inputNamaToko').value);
   tokoData.info = sanitize(document.getElementById('inputInfoToko').value);
-  
+
   localStorage.setItem(LS_KEY_SETTINGS, JSON.stringify(tokoData));
-  
+
   document.getElementById('headerNamaToko').innerText = tokoData.nama || "KASIR PRO";
-  document.getElementById('headerInfoToko').innerText = tokoData.info || "Secure Hybrid Mode";
-  
-  google.script.run.withSuccessHandler(() => {
-    showToast("Pengaturan disimpan ke server!");
-  }).withFailureHandler(() => {
-    showToast("Pengaturan disimpan secara lokal!");
-  }).saveSettings(tokoData);
+  document.getElementById('headerInfoToko').innerText = tokoData.info || "Secure Hybrid Mode v2.3";
+
+  if(navigator.onLine) {
+    google.script.run.withSuccessHandler(() => showToast("✅ Pengaturan tersimpan ke server"))
+      .saveSettings(tokoData);
+  } else {
+    showToast("💾 Pengaturan tersimpan lokal");
+  }
 }
 </script>
   </body>
