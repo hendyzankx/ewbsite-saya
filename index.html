@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Link ke Manifest agar bisa diinstall di HP -->
     <link rel="manifest" href="manifest.json" />
-    <title>Kasir Pro Offline + GSheet Sync</title>
+    <title>Kasir Pro + Detail GSheet</title>
 
     <!-- Warna tema browser (Address bar) -->
     <meta name="theme-color" content="#2563eb" />
@@ -710,7 +710,7 @@
     <div class="app">
       <div class="header no-print">
         <h1>💰 KASIR PRO ONLINE</h1>
-        <small>Sync ke Google Sheet</small>
+        <small>Sync Detail Penjualan & Stok ke GSheet</small>
         <div id="syncStatus" class="sync-status terputus">🔴 Google Sheet: Tidak Terhubung</div>
       </div>
 
@@ -977,7 +977,7 @@
           <div class="card" style="border-left: 4px solid #4285F4;">
             <h3>☁️ Koneksi Google Sheet</h3>
             <p style="font-size:13px; color:#64748b; margin-bottom:10px;">
-              Masukkan URL Web App dari Google Apps Script agar data penjualan tersimpan otomatis di Cloud.
+              Masukkan URL Web App dari Google Apps Script agar data penjualan, keuntungan, dan sisa stok tersimpan otomatis di Cloud.
             </p>
             <div class="setting-row">
               <label>URL Web App (Google Script)</label>
@@ -1124,7 +1124,7 @@
       // ==========================================
       // PENTING: MASUKKAN URL GOOGLE APP SCRIPT ANDA DI SINI
       // Jika tidak diisi, aplikasi tetap jalan OFFLINE
-      let URL_GOOGLE_SCRIPT = dbPengaturan.googleUrl || "  https://script.google.com/macros/s/AKfycbyqWOMCDTO27scNZoSgfrr1-zPdKM6zLx-Mc3dkfVqnvqm9n6GlGmVhkDL8hyT4e0KPYg/exec   ";
+      let URL_GOOGLE_SCRIPT = dbPengaturan.googleUrl || "";
 
       let struk = [];
       let html5QrcodeScanner = null;
@@ -1152,11 +1152,11 @@
         }
       }
 
-      // Fungsi Kirim Data ke Google Sheet
+      // Fungsi Kirim Data ke Google Sheet (UPDATED LOGIC)
       function kirimKeGoogleSheet(dataTransaksi) {
         if (!URL_GOOGLE_SCRIPT) return;
 
-        tampilkanToast("Syncing...", "Mengirim data ke Google Sheet...", false);
+        tampilkanToast("Syncing...", "Mengirim data detail ke Google Sheet...", false);
         
         fetch(URL_GOOGLE_SCRIPT, {
           method: "POST",
@@ -1168,12 +1168,11 @@
         })
         .then(() => {
           console.log("Data terkirim ke Google Sheet");
-          // Kita tidak bisa cek response karena no-cors, tapi kita asumsikan sukses jika tidak error
-          tampilkanToast("Sync Berhasil", "Data tersimpan di Cloud!", false);
+          tampilkanToast("Sync Berhasil", "Data penjualan & stok tersimpan!", false);
         })
         .catch((error) => {
           console.error("Gagal sync:", error);
-          tampilkanToast("Sync Gagal", "Cek koneksi internet atau URL Script.", true);
+          tampilkanToast("Sync Gagal", "Cek koneksi internet.", true);
         });
       }
 
@@ -1607,6 +1606,7 @@
         let stokMasalah = "";
         let barangHabisList = [];
 
+        // Validasi Stok sebelum pengurangan
         for (let i = 0; i < struk.length; i++) {
           let itemStruk = struk[i];
           let barangDb = dbBarang.find((b) => b.barcode === itemStruk.barcode);
@@ -1615,26 +1615,35 @@
         }
         if (stokMasalah !== "") { alert("⛔ TRANSAKSI DIBATALKAN!\n\n" + stokMasalah + "\nSilakan periksa stok atau kurangi jumlah barang."); return; }
 
-        // Proses stok dan kumpulkan barang yang habis
+        // --- PREPARE DATA SHEET (LOGIC BARU) ---
+        // Kita kumpulkan data sisa stok dalam JSON string agar rapi di 1 kolom
+        let sisaStokList = [];
+        
         struk.forEach((s) => { 
           let b = dbBarang.find((x) => x.barcode === s.barcode);
           if (b) {
-            b.stok -= s.qty;
+            b.stok -= s.qty; // Kurangi stok di database lokal
+            let sisaAkhir = b.stok;
+            
+            // Tambahkan ke list untuk report
+            sisaStokList.push(`${s.nama} (Sisa: ${sisaAkhir})`);
+            
             if (b.stok <= 0) barangHabisList.push(b.nama);
           }
         });
-        
+
         const noStruk = "#" + Date.now().toString().slice(-6);
         const waktuTransaksi = new Date().toLocaleString("id-ID");
-        
-        // Data untuk Google Sheet
+
+        // Data lengkap untuk Google Sheet
         const dataSheet = {
           noStruk: noStruk,
           waktu: waktuTransaksi,
           item: struk.map((s) => `${s.nama} x${s.qty}`).join(", "),
           totalJual: totalJual,
           totalModal: totalModal,
-          laba: laba
+          laba: laba, // Kolom Keuntungan
+          sisaStokJson: JSON.stringify(sisaStokList) // Kolom Sisa Stok (Format JSON Array)
         };
 
         dbTransaksi.push({ 
@@ -1646,17 +1655,17 @@
         });
         
         siapkanCetak(totalJual, bayar);
-        simpanDb(); // Simpan ke LocalStorage dulu agar data aman
+        simpanDb(); // Simpan ke LocalStorage
         
-        // Kirim ke Google Sheet (Async, tidak mengganggu proses cetak)
+        // Kirim ke Google Sheet
         kirimKeGoogleSheet(dataSheet);
         
         tampilkanToast("Transaksi Berhasil!", `Total: Rp${totalJual.toLocaleString()}\nLaba: Rp${laba.toLocaleString()}`);
 
-        // Tampilkan peringatan jika ada stok habis
+        // Peringatan Stok Habis
         if (barangHabisList.length > 0) {
           setTimeout(() => {
-            tampilkanToast("PERINGATAN STOK HABIS", `Barang berikut habis dan perlu restock:\n${barangHabisList.join(", ")}`, true);
+            tampilkanToast("PERINGATAN STOK HABIS", `Barang berikut habis:\n${barangHabisList.join(", ")}`, true);
           }, 2500);
         }
 
