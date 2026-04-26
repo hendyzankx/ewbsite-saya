@@ -304,7 +304,6 @@ let chartInstance = null;
 const sanitize = (str) => String(str || "").replace(/[<>"'`]/g, "");
 const formatRupiah = (num) => Number(num).toLocaleString('id-ID');
 const playSound = (type) => {
-    // AudioContext beep implementation
     try {
         let ctx = new (window.AudioContext || window.webkitAudioContext)();
         let osc = ctx.createOscillator();
@@ -327,7 +326,7 @@ function showToast(msg) {
 }
 
 // ==========================================
-// 3. GOOGLE SCRIPT MOCK (Run Mode)
+// 3. GOOGLE SCRIPT MOCK (Run Mode) - PERBAIKAN DISINI
 // ==========================================
 if (typeof google === 'undefined') {
   console.log("Mocking google.script.run for standalone mode");
@@ -339,15 +338,12 @@ if (typeof google === 'undefined') {
             withFailureHandler: (errCb) => {
               return {
                 loadAppData: () => {
-                  // Return mock data + data from localStorage if exists
                   const savedBarang = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG) || '[]');
                   const savedTx = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_TX) || '[]');
                   const savedSettings = JSON.parse(localStorage.getItem(LS_KEY_SETTINGS) || '{}');
                   
-                  // Merge settings
                   if(savedSettings.nama) tokoData = savedSettings;
 
-                  // Return structure expected by frontend
                   cb({
                     barang: [...dbBarang, ...savedBarang],
                     transaksi: savedTx,
@@ -355,15 +351,24 @@ if (typeof google === 'undefined') {
                   });
                 },
                 saveTransaction: (tx) => {
-                  // Simulate server latency
                   setTimeout(() => cb({ success: true }), 500);
                 },
+                // PERBAIKAN: Mock SaveProduct benar-benar menyimpan ke localStorage
                 saveProduct: (prod) => {
-                  // Simulate save
+                  let cache = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG) || '[]');
+                  let idx = cache.findIndex(x => x.barcode === prod.barcode);
+                  if(idx >= 0) cache[idx] = prod;
+                  else cache.push(prod);
+                  localStorage.setItem(LS_KEY_OFFLINE_BARANG, JSON.stringify(cache));
                   setTimeout(() => cb({ success: true }), 500);
                 },
                 syncOfflineData: (data) => {
                    setTimeout(() => cb({ success: true }), 1000);
+                },
+                // PERBAIKAN: Mock saveSettings ditambahkan agar tidak error
+                saveSettings: (settings) => {
+                   localStorage.setItem(LS_KEY_SETTINGS, JSON.stringify(settings));
+                   setTimeout(() => cb({ success: true }), 500);
                 }
               }
             }
@@ -382,28 +387,20 @@ window.onload = function() {
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
   
-  // Initial Load
   loadCloudData();
-  
-  // Auto sync interval (30s)
   setInterval(attemptSync, 30000);
 };
 
 function gantiTab(tabId) {
-  // Hide all
   ['kasir', 'barang', 'laporan', 'pengaturan'].forEach(id => {
     document.getElementById(id).classList.add('hide');
     document.getElementById('tab' + id.charAt(0).toUpperCase() + id.slice(1)).classList.remove('aktif');
   });
   
-  // Show target
   document.getElementById(tabId).classList.remove('hide');
   document.getElementById('tab' + tabId.charAt(0).toUpperCase() + tabId.slice(1)).classList.add('aktif');
-
-  // Stop camera if switching away from tabs with camera
   stopCamera();
 
-  // Render specific tab needs
   if(tabId === 'laporan') renderLaporan();
   if(tabId === 'barang') renderBarang();
 }
@@ -438,11 +435,9 @@ function updatePendingBadge() {
 }
 
 function attemptSync() {
-  if (typeof google === 'undefined' || !navigator.onLine) return; // Don't sync in mock mode
-
+  if (typeof google === 'undefined' || !navigator.onLine) return; 
   let offlineTx = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_TX) || '[]');
   let offlineBarang = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG) || '[]');
-
   if (offlineTx.length === 0 && offlineBarang.length === 0) return;
 
   google.script.run
@@ -451,7 +446,7 @@ function attemptSync() {
         showToast("Sinkronisasi Berhasil!");
         localStorage.removeItem(LS_KEY_OFFLINE_TX);
         localStorage.removeItem(LS_KEY_OFFLINE_BARANG);
-        loadCloudData(); // Reload fresh data
+        loadCloudData(); 
       }
     })
     .withFailureHandler(function() {
@@ -465,21 +460,17 @@ function attemptSync() {
 // ==========================================
 function loadCloudData() {
   google.script.run.withSuccessHandler(function(data) {
-    // Update globals
     if(data.barang) dbBarang = data.barang;
     if(data.toko) tokoData = data.toko;
     
-    // Merge Transactions (Cloud + Local)
     let cloudTx = data.transaksi || [];
     let offlineTx = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_TX) || '[]');
     
-    // Simple merge by ID uniqueness logic
     let map = new Map();
     cloudTx.forEach(t => map.set(t.id, t));
-    offlineTx.forEach(t => map.set(t.id, t)); // Overwrite cloud with offline if conflict (offline is newer)
+    offlineTx.forEach(t => map.set(t.id, t)); 
     dbTransaksi = Array.from(map.values()).sort((a,b) => new Date(b.waktuISO) - new Date(a.waktuISO));
 
-    // Update UI
     document.getElementById('headerNamaToko').innerText = tokoData.nama || "KASIR PRO";
     document.getElementById('headerInfoToko').innerText = tokoData.info || "Secure Hybrid Mode";
     document.getElementById('inputNamaToko').value = tokoData.nama || "";
@@ -527,8 +518,6 @@ function tambahKeStruk(barcode, qty = 1) {
   let itemInCart = struk.find(s => s.barcode == barcode);
   let currentQtyInCart = itemInCart ? itemInCart.qty : 0;
 
-  // Check stock (checking against dbBarang which is the 'truth' at that moment)
-  // In a real strict system, we might lock items. Here we assume optimistic locking.
   if (barang.stok < currentQtyInCart + qty) {
     playSound('error');
     return showToast(`⚠️ Stok tidak cukup! Sisa: ${barang.stok}`);
@@ -611,7 +600,7 @@ function hitungKembali() {
   let elKembali = document.getElementById('kembalian');
   elKembali.innerText = formatRupiah(kembali < 0 ? 0 : kembali);
   
-  if(kembali < 0) elKembali.style.color = '#ef4444'; // Red if not enough
+  if(kembali < 0) elKembali.style.color = '#ef4444'; 
   else elKembali.style.color = 'white';
 }
 
@@ -634,34 +623,29 @@ function selesaiTransaksi() {
     kembalian: bayar - total,
     totalModal: struk.reduce((a,b)=>a+b.hargaBeli*b.qty,0),
     laba: total - struk.reduce((a,b)=>a+b.hargaBeli*b.qty,0),
-    itemList: JSON.parse(JSON.stringify(struk)) // Deep copy
+    itemList: JSON.parse(JSON.stringify(struk))
   };
 
-  // UI Loading state
   let btn = document.querySelector('button[onclick="selesaiTransaksi()"]');
   let originalText = btn.innerHTML;
   btn.disabled = true;
   btn.innerHTML = "⏳ Memproses...";
 
   let processSuccess = () => {
-    // Update Local Stock
     transaksi.itemList.forEach(item => {
       let b = dbBarang.find(x => x.barcode === item.barcode);
       if(b) b.stok -= item.qty;
     });
-    renderBarang(); // Update barang tab
-    populateSelectBarang(); // Update dropdown
+    renderBarang();
+    populateSelectBarang();
 
-    // Show Modal
     preparePrint(transaksi);
     document.getElementById('modalStruk').classList.add('show');
 
-    // Clear Cart
     struk = [];
     document.getElementById('bayar').value = '';
     renderStruk();
     
-    // Reset Button
     btn.disabled = false;
     btn.innerHTML = originalText;
     playSound('success');
@@ -689,7 +673,7 @@ function saveOffline(t) {
   offline.push(t);
   localStorage.setItem(LS_KEY_OFFLINE_TX, JSON.stringify(offline));
   
-  dbTransaksi.unshift(t); // Add to local report memory
+  dbTransaksi.unshift(t); 
   updatePendingBadge();
   showToast("💾 Disimpan Offline (Pending Sync)");
 }
@@ -711,14 +695,12 @@ function simpanBarang() {
 
   if(!navigator.onLine) {
     let cache = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG)||'[]');
-    // Check update vs insert
     let existingIdx = cache.findIndex(x => x.barcode === barcode);
     if(existingIdx >= 0) cache[existingIdx] = data;
     else cache.push(data);
     
     localStorage.setItem(LS_KEY_OFFLINE_BARANG, JSON.stringify(cache));
     
-    // Update local memory too so it works immediately
     let memIdx = dbBarang.findIndex(x => x.barcode === barcode);
     if(memIdx >= 0) dbBarang[memIdx] = data;
     else dbBarang.push(data);
@@ -729,7 +711,7 @@ function simpanBarang() {
   }
 
   google.script.run.withSuccessHandler(() => {
-    loadCloudData(); // Reload clean data
+    loadCloudData();
     showToast("✅ Barang Tersimpan!");
     batalEdit();
   }).saveProduct(data);
@@ -778,7 +760,6 @@ function batalEdit() {
 }
 
 function cekJenisBarang() {
-  // Auto-fill if exists
   let code = document.getElementById('barcode').value;
   let b = dbBarang.find(x => x.barcode === code);
   if(b) editBarang(code);
@@ -793,7 +774,6 @@ function renderLaporan() {
   const tbody = document.getElementById('tbodyLaporan');
   tbody.innerHTML = '';
 
-  // Limit to last 50 transactions for performance
   let recentTx = dbTransaksi.slice(0, 50);
 
   recentTx.forEach(t => {
@@ -819,7 +799,6 @@ function renderLaporan() {
 function updateChart(data) {
   const ctx = document.getElementById('chartLaporan').getContext('2d');
   
-  // Group sales by hour or simple date logic (Simplified: Last 7 transactions)
   let labels = data.slice(0, 10).map(t => t.waktu.split(',')[1] || t.waktu);
   let values = data.slice(0, 10).map(t => t.totalJual);
 
@@ -917,18 +896,16 @@ function toggleCamera(elementId) {
   const readerEl = document.getElementById(elementId);
   
   if (readerEl.classList.contains('hide')) {
-    // Open Camera
     readerEl.classList.remove('hide');
     startCamera(elementId);
   } else {
-    // Close Camera
     readerEl.classList.add('hide');
     stopCamera();
   }
 }
 
 function startCamera(elementId) {
-  stopCamera(); // Ensure only one runs
+  stopCamera();
   
   html5QrcodeScanner = new Html5Qrcode(elementId);
   const config = { fps: 10, qrbox: { width: 250, height: 150 } };
@@ -944,9 +921,7 @@ function startCamera(elementId) {
       }
       stopCamera();
     },
-    (errorMessage) => {
-      // parsing error, ignore
-    }
+    (errorMessage) => {}
   ).catch(err => {
     console.error(err);
     showToast("Kamera gagal aktif");
@@ -966,15 +941,15 @@ function stopCamera() {
 }
 
 // ==========================================
-// 12. SETTINGS
+// 12. SETTINGS - PERBAIKAN DISINI
 // ==========================================
 function simpanPengaturan() {
   tokoData.nama = sanitize(document.getElementById('inputNamaToko').value);
-  tokoData.info = sanitize(document.getElementById('inputInfoToko0').value);
+  // PERBAIKAN: Typo ID diperbaiki dari 'inputInfoToko0' menjadi 'inputInfoToko'
+  tokoData.info = sanitize(document.getElementById('inputInfoToko').value);
   
   localStorage.setItem(LS_KEY_SETTINGS, JSON.stringify(tokoData));
   
-  // Update header
   document.getElementById('headerNamaToko').innerText = tokoData.nama || "KASIR PRO";
   document.getElementById('headerInfoToko').innerText = tokoData.info || "Secure Hybrid Mode";
   
@@ -983,8 +958,6 @@ function simpanPengaturan() {
   }).withFailureHandler(() => {
     showToast("Pengaturan disimpan secara lokal!");
   }).saveSettings(tokoData);
-
-
 }
 </script>
   </body>
