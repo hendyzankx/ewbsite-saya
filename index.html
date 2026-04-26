@@ -33,6 +33,7 @@
       body {
         background: var(--abu);
         padding: 10px;
+        padding-bottom: 80px; /* Space agar tidak tertutup notifikasi di HP */
       }
       .app {
         max-width: 1200px;
@@ -41,6 +42,7 @@
         border-radius: 16px;
         box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         overflow: hidden;
+        position: relative;
       }
       .header {
         background: linear-gradient(135deg, var(--biru), #1e40af);
@@ -506,10 +508,68 @@
         border-color: var(--biru);
       }
 
+      /* ===== TOAST NOTIFICATION (POPUP SUKSES) ===== */
+      .toast-container {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        width: 90%;
+        max-width: 400px;
+        pointer-events: none; /* Agar klik tembus ke bawah */
+      }
+
+      .toast {
+        background: white;
+        color: #064e3b;
+        padding: 16px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        pointer-events: auto;
+        border-left: 6px solid var(--hijau);
+      }
+
+      .toast.show {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .toast-icon {
+        font-size: 24px;
+        color: var(--hijau);
+      }
+
+      .toast-content {
+        flex: 1;
+      }
+
+      .toast-title {
+        font-weight: 700;
+        font-size: 15px;
+        margin-bottom: 2px;
+      }
+
+      .toast-msg {
+        font-size: 13px;
+        color: #4b5563;
+      }
+      /* ===== AKHIR TOAST NOTIFICATION ===== */
+
       @media print {
         .no-print,
         .tabs,
-        .header {
+        .header,
+        .toast-container {
           display: none !important;
         }
         body {
@@ -524,8 +584,6 @@
         }
       }
     </style>
-
-
   </head>
   <body>
     <div class="app">
@@ -817,6 +875,9 @@
         </div>
       </div>
     </div>
+
+    <!-- CONTAINER TOAST NOTIFICATION -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <script>
       // Daftar kategori default dengan emoji dan warna badge
@@ -1527,8 +1588,46 @@
 
         siapkanCetak(totalJual, bayar);
         simpanDb();
+        
+        // Tampilkan Notifikasi Sukses (Toast)
+        tampilkanToastSukses(totalJual, laba);
+
         window.print();
         resetStruk();
+      }
+
+      // ===== FUNGSI TOAST NOTIFICATION SUKSES =====
+      function tampilkanToastSukses(total, laba) {
+        let container = document.getElementById("toastContainer");
+        
+        // Buat elemen toast
+        let toast = document.createElement("div");
+        toast.className = "toast";
+        toast.innerHTML = `
+          <div class="toast-icon">✅</div>
+          <div class="toast-content">
+            <div class="toast-title">Transaksi Berhasil!</div>
+            <div class="toast-msg">
+              Total: Rp${total.toLocaleString()} <br>
+              Laba: <span style="color:var(--hijau);font-weight:bold">Rp${laba.toLocaleString()}</span>
+            </div>
+          </div>
+        `;
+
+        container.appendChild(toast);
+
+        // Trigger reflow untuk animasi
+        requestAnimationFrame(() => {
+          toast.classList.add("show");
+        });
+
+        // Hapus toast setelah 4 detik
+        setTimeout(() => {
+          toast.classList.remove("show");
+          setTimeout(() => {
+            toast.remove();
+          }, 300); // Tunggu animasi fade out selesai
+        }, 4000);
       }
 
       function siapkanCetak(total, bayar) {
