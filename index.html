@@ -1,72 +1,3 @@
-Tentu, ini adalah fitur yang sangat powerful. Dengan menghubungkan ke **Google Sheets**, data penjualan Anda akan tersimpan secara otomatis di Cloud, sehingga data lebih aman dan bisa Anda buka di komputer untuk dianalisis lebih lanjut.
-
-Karena ini berjalan di browser (Client Side), kita akan menggunakan **Google Apps Script** sebagai jembatannya. Data penjualan akan dikirim (POST) ke script Anda, lalu script tersebut menyimpannya ke Google Sheet.
-
-Berikut adalah langkah-langkahnya dan kode lengkap yang sudah diperbarui.
-
-### Langkah 1: Buat Google Sheet & Script
-
-1.  Buka [sheets.google.com](https://sheets.google.com) dan buat Sheet baru (beri nama misal: "Database Kasir").
-2.  Di menu atas, klik **Extensions (Ekstensi)** > **Apps Script**.
-3.  Hapus semua kode yang ada, lalu tempel (paste) kode berikut:
-
-```javascript
-// KODE UNTUK GOOGLE APPS SCRIPT
-function doPost(e) {
-  var lock = LockService.getScriptLock();
-  lock.tryLock(10000);
-
-  try {
-    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    var data = JSON.parse(e.postData.contents);
-
-    // Header jika sheet kosong
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow(["Waktu", "No Struk", "Item", "Total Omset", "Total Modal", "Laba", "Metode Pembayaran"]);
-    }
-
-    // Simpan data
-    sheet.appendRow([
-      new Date(),
-      data.noStruk,
-      data.item,
-      data.totalJual,
-      data.totalModal,
-      data.laba,
-      "Tunai"
-    ]);
-
-    return ContentService.createTextOutput(JSON.stringify({ "result": "success", "row": sheet.getLastRow() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-
-  catch (e) {
-    return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": e }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-
-  finally {
-    lock.releaseLock();
-  }
-}
-```
-
-4.  Klik tombol **Save** (ikon disket).
-5.  Klik tombol **Deploy** (kanan atas) > **New Deployment**.
-6.  Klik icon gear (settings) di sebelah "Select type" > pilih **Web app**.
-7.  Isi Description: "API Kasir".
-8.  **Execute as**: Pilih **Me** (email Anda).
-9.  **Who has access**: Pilih **Anyone**. *(Ini wajib dipilih agar HTML bisa mengirim data tanpa login Google)*.
-10. Klik **Deploy**.
-11. **Salin (Copy) URL Web App** yang muncul (biasanya berawalan `https://script.google.com/macros/s/.../exec`).
-
----
-
-### Langkah 2: Masukkan URL ke Aplikasi
-
-Di bawah ini adalah kode HTML lengkap. Cari bagian **`URL_GOOGLE_SCRIPT`** di dalam kode JavaScript (sekitar baris 500) dan tempel URL yang Anda salin tadi.
-
-```html
 <!doctype html>
 <html lang="id">
   <head>
@@ -1193,7 +1124,7 @@ Di bawah ini adalah kode HTML lengkap. Cari bagian **`URL_GOOGLE_SCRIPT`** di da
       // ==========================================
       // PENTING: MASUKKAN URL GOOGLE APP SCRIPT ANDA DI SINI
       // Jika tidak diisi, aplikasi tetap jalan OFFLINE
-      let URL_GOOGLE_SCRIPT = dbPengaturan.googleUrl || "https://script.google.com/macros/s/AKfycbxvOaxIJerNRO-wTtXkAkeBb-5oX5rhYy8NzTdXh-tPGe-Cb3kFq4m6HGMZ256gbt0z2Q/exec";
+      let URL_GOOGLE_SCRIPT = dbPengaturan.googleUrl || "  https://script.google.com/macros/s/AKfycbyqWOMCDTO27scNZoSgfrr1-zPdKM6zLx-Mc3dkfVqnvqm9n6GlGmVhkDL8hyT4e0KPYg/exec   ";
 
       let struk = [];
       let html5QrcodeScanner = null;
@@ -1999,4 +1930,3 @@ Di bawah ini adalah kode HTML lengkap. Cari bagian **`URL_GOOGLE_SCRIPT`** di da
     </script>
   </body>
 </html>
-```
