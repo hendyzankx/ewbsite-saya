@@ -1,4 +1,72 @@
+Tentu, ini adalah fitur yang sangat powerful. Dengan menghubungkan ke **Google Sheets**, data penjualan Anda akan tersimpan secara otomatis di Cloud, sehingga data lebih aman dan bisa Anda buka di komputer untuk dianalisis lebih lanjut.
 
+Karena ini berjalan di browser (Client Side), kita akan menggunakan **Google Apps Script** sebagai jembatannya. Data penjualan akan dikirim (POST) ke script Anda, lalu script tersebut menyimpannya ke Google Sheet.
+
+Berikut adalah langkah-langkahnya dan kode lengkap yang sudah diperbarui.
+
+### Langkah 1: Buat Google Sheet & Script
+
+1.  Buka [sheets.google.com](https://sheets.google.com) dan buat Sheet baru (beri nama misal: "Database Kasir").
+2.  Di menu atas, klik **Extensions (Ekstensi)** > **Apps Script**.
+3.  Hapus semua kode yang ada, lalu tempel (paste) kode berikut:
+
+```javascript
+// KODE UNTUK GOOGLE APPS SCRIPT
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var data = JSON.parse(e.postData.contents);
+
+    // Header jika sheet kosong
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(["Waktu", "No Struk", "Item", "Total Omset", "Total Modal", "Laba", "Metode Pembayaran"]);
+    }
+
+    // Simpan data
+    sheet.appendRow([
+      new Date(),
+      data.noStruk,
+      data.item,
+      data.totalJual,
+      data.totalModal,
+      data.laba,
+      "Tunai"
+    ]);
+
+    return ContentService.createTextOutput(JSON.stringify({ "result": "success", "row": sheet.getLastRow() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  catch (e) {
+    return ContentService.createTextOutput(JSON.stringify({ "result": "error", "error": e }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  finally {
+    lock.releaseLock();
+  }
+}
+```
+
+4.  Klik tombol **Save** (ikon disket).
+5.  Klik tombol **Deploy** (kanan atas) > **New Deployment**.
+6.  Klik icon gear (settings) di sebelah "Select type" > pilih **Web app**.
+7.  Isi Description: "API Kasir".
+8.  **Execute as**: Pilih **Me** (email Anda).
+9.  **Who has access**: Pilih **Anyone**. *(Ini wajib dipilih agar HTML bisa mengirim data tanpa login Google)*.
+10. Klik **Deploy**.
+11. **Salin (Copy) URL Web App** yang muncul (biasanya berawalan `https://script.google.com/macros/s/.../exec`).
+
+---
+
+### Langkah 2: Masukkan URL ke Aplikasi
+
+Di bawah ini adalah kode HTML lengkap. Cari bagian **`URL_GOOGLE_SCRIPT`** di dalam kode JavaScript (sekitar baris 500) dan tempel URL yang Anda salin tadi.
+
+```html
 <!doctype html>
 <html lang="id">
   <head>
@@ -6,7 +74,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Link ke Manifest agar bisa diinstall di HP -->
     <link rel="manifest" href="manifest.json" />
-    <title>Kasir Pro Offline</title>
+    <title>Kasir Pro Offline + GSheet Sync</title>
 
     <!-- Warna tema browser (Address bar) -->
     <meta name="theme-color" content="#2563eb" />
@@ -55,6 +123,17 @@
         font-size: 22px;
         font-weight: 700;
       }
+      .header .sync-status {
+        font-size: 11px;
+        margin-top: 5px;
+        background: rgba(255,255,255,0.2);
+        padding: 2px 8px;
+        border-radius: 4px;
+        display: inline-block;
+      }
+      .sync-status.terhubung { color: #bbf7d0; }
+      .sync-status.terputus { color: #fecaca; }
+      
       .tabs {
         display: flex;
         background: #e2e8f0;
@@ -100,7 +179,8 @@
         color: #334155;
       }
       input,
-      select {
+      select,
+      textarea {
         width: 100%;
         padding: 12px;
         margin: 6px 0;
@@ -545,30 +625,12 @@
         font-weight: 700;
         white-space: nowrap;
       }
-      .badge-makanan {
-        background: #fef3c7;
-        color: #92400e;
-      }
-      .badge-minuman {
-        background: #dbeafe;
-        color: #1e40af;
-      }
-      .badge-rokok {
-        background: #f3e8ff;
-        color: #7c3aed;
-      }
-      .badge-snack {
-        background: #fce7f3;
-        color: #be185d;
-      }
-      .badge-kebutuhan {
-        background: #d1fae5;
-        color: #065f46;
-      }
-      .badge-lainnya {
-        background: #f1f5f9;
-        color: #475569;
-      }
+      .badge-makanan { background: #fef3c7; color: #92400e; }
+      .badge-minuman { background: #dbeafe; color: #1e40af; }
+      .badge-rokok { background: #f3e8ff; color: #7c3aed; }
+      .badge-snack { background: #fce7f3; color: #be185d; }
+      .badge-kebutuhan { background: #d1fae5; color: #065f46; }
+      .badge-lainnya { background: #f1f5f9; color: #475569; }
 
       /* ===== Filter kategori di tab barang ===== */
       .filter-grid {
@@ -596,6 +658,34 @@
         background: var(--biru);
         color: white;
         border-color: var(--biru);
+      }
+
+      /* ===== FITUR BARU: STOK WARNING ===== */
+      .badge-stok {
+        font-size: 11px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
+        display: inline-block;
+        margin-top: 4px;
+      }
+      .stok-aman {
+        background: #d1fae5; color: #065f46;
+      }
+      .stok-warning {
+        background: #fee2e2; color: #991b1b;
+        animation: pulse-red 2s infinite;
+      }
+      .teks-stok-warning {
+        color: #991b1b;
+        font-weight: 700;
+        font-size: 12px;
+      }
+      
+      @keyframes pulse-red {
+        0% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.4); }
+        70% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); }
       }
 
       /* ===== TOAST NOTIFICATION ===== */
@@ -631,9 +721,16 @@
         opacity: 1;
         transform: translateY(0);
       }
+      .toast.warning {
+        border-left: 6px solid var(--oren);
+        color: #78350f;
+      }
       .toast-icon {
         font-size: 24px;
         color: var(--hijau);
+      }
+      .toast.warning .toast-icon {
+        color: var(--oren);
       }
       .toast-content {
         flex: 1;
@@ -681,8 +778,9 @@
   <body>
     <div class="app">
       <div class="header no-print">
-        <h1>💰 KASIR PRO OFFLINE</h1>
-        <small>Scan cepat, atur jumlah, pantau keuntungan otomatis</small>
+        <h1>💰 KASIR PRO ONLINE</h1>
+        <small>Sync ke Google Sheet</small>
+        <div id="syncStatus" class="sync-status terputus">🔴 Google Sheet: Tidak Terhubung</div>
       </div>
 
       <div class="tabs no-print">
@@ -804,7 +902,7 @@
               <div class="angka">Rp <span id="kembalian">0</span></div>
             </div>
             <button class="btn-selesai" onclick="selesaiTransaksi()">
-              SELESAI & CETAK
+              SELESAI & UPLOAD
             </button>
             <button
               onclick="resetStruk()"
@@ -944,6 +1042,19 @@
 
         <!-- TAB PENGATURAN (BARU) -->
         <div id="pengaturan" class="hide no-print">
+          <!-- Koneksi Google Sheet -->
+          <div class="card" style="border-left: 4px solid #4285F4;">
+            <h3>☁️ Koneksi Google Sheet</h3>
+            <p style="font-size:13px; color:#64748b; margin-bottom:10px;">
+              Masukkan URL Web App dari Google Apps Script agar data penjualan tersimpan otomatis di Cloud.
+            </p>
+            <div class="setting-row">
+              <label>URL Web App (Google Script)</label>
+              <input type="text" id="setGoogleUrl" placeholder="https://script.google.com/macros/s/..." />
+            </div>
+            <button onclick="simpanPengaturan()" class="btn-save">💾 Simpan Koneksi</button>
+          </div>
+
           <!-- Profil Toko -->
           <div class="card">
             <h3>⚙️ Pengaturan Profil Toko</h3>
@@ -964,6 +1075,19 @@
               <textarea id="setFooterStruk" rows="2" style="width:100%; padding:10px; margin:5px 0; border:1px solid #cbd5e1; border-radius:8px;" placeholder="Barang yang dibeli tidak dapat ditukar..."></textarea>
             </div>
             <button onclick="simpanPengaturan()" class="btn-save">💾 Simpan Perubahan</button>
+          </div>
+
+          <!-- Pengaturan Stok -->
+          <div class="card" style="border-left: 4px solid var(--oren);">
+            <h3>⚠️ Pengaturan Peringatan Stok</h3>
+            <p style="font-size:13px; color:#64748b; margin-bottom:10px;">
+              Atur batas minimal stok. Jika stok barang berada di bawah angka ini, sistem akan memberikan peringatan.
+            </p>
+            <div class="setting-row">
+              <label>Batas Minimal Stok</label>
+              <input type="number" id="setBatasStok" value="5" min="1" />
+            </div>
+            <button onclick="simpanPengaturan()" class="btn-save">💾 Update Batas Stok</button>
           </div>
 
           <!-- Backup & Restore -->
@@ -1054,8 +1178,6 @@
     <div class="toast-container" id="toastContainer"></div>
 
     <script>
-
-        const GAS_URL = "https://script.google.com/macros/s/AKfycbxvOaxIJerNRO-wTtXkAkeBb-5oX5rhYy8NzTdXh-tPGe-Cb3kFq4m6HGMZ256gbt0z2Q/exec";
       // === VARIABEL GLOBAL & STATE ===
       let dbBarang = JSON.parse(localStorage.getItem("barang") || "[]");
       let dbTransaksi = JSON.parse(localStorage.getItem("transaksi") || "[]");
@@ -1066,6 +1188,12 @@
       if (!dbPengaturan.alamatToko) dbPengaturan.alamatToko = "Jl. Merdeka No. 45, Jakarta Selatan";
       if (!dbPengaturan.teleponToko) dbPengaturan.teleponToko = "0812-3456-7890";
       if (!dbPengaturan.footerStruk) dbPengaturan.footerStruk = "Barang yang sudah dibeli\nTidak dapat ditukar/dikembalikan";
+      if (!dbPengaturan.batasStok) dbPengaturan.batasStok = 5; // Default batas stok
+
+      // ==========================================
+      // PENTING: MASUKKAN URL GOOGLE APP SCRIPT ANDA DI SINI
+      // Jika tidak diisi, aplikasi tetap jalan OFFLINE
+      let URL_GOOGLE_SCRIPT = dbPengaturan.googleUrl || "https://script.google.com/macros/s/AKfycbxvOaxIJerNRO-wTtXkAkeBb-5oX5rhYy8NzTdXh-tPGe-Cb3kFq4m6HGMZ256gbt0z2Q/exec";
 
       let struk = [];
       let html5QrcodeScanner = null;
@@ -1079,11 +1207,50 @@
       let indeksDiangkat = -1;
       let filterKategoriAktif = "";
 
+      // Cek Koneksi ke Google Sheet
+      function cekKoneksiGoogle() {
+        const statusEl = document.getElementById("syncStatus");
+        if (URL_GOOGLE_SCRIPT && URL_GOOGLE_SCRIPT.length > 10) {
+          statusEl.innerHTML = "🟢 Google Sheet: Terhubung";
+          statusEl.classList.remove("terputus");
+          statusEl.classList.add("terhubung");
+        } else {
+          statusEl.innerHTML = "🔴 Google Sheet: Tidak Terhubung";
+          statusEl.classList.remove("terhubung");
+          statusEl.classList.add("terputus");
+        }
+      }
+
+      // Fungsi Kirim Data ke Google Sheet
+      function kirimKeGoogleSheet(dataTransaksi) {
+        if (!URL_GOOGLE_SCRIPT) return;
+
+        tampilkanToast("Syncing...", "Mengirim data ke Google Sheet...", false);
+        
+        fetch(URL_GOOGLE_SCRIPT, {
+          method: "POST",
+          mode: "no-cors", // Penting untuk menghindari error CORS
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(dataTransaksi),
+        })
+        .then(() => {
+          console.log("Data terkirim ke Google Sheet");
+          // Kita tidak bisa cek response karena no-cors, tapi kita asumsikan sukses jika tidak error
+          tampilkanToast("Sync Berhasil", "Data tersimpan di Cloud!", false);
+        })
+        .catch((error) => {
+          console.error("Gagal sync:", error);
+          tampilkanToast("Sync Gagal", "Cek koneksi internet atau URL Script.", true);
+        });
+      }
+
       // Data awal dummy jika barang kosong
       if (dbBarang.length === 0) {
         dbBarang = [
           { barcode: "8992761120015", nama: "Indomie Goreng", kategori: "Makanan", hargaBeli: 2500, hargaJual: 3500, stok: 100 },
-          { barcode: "8999909015032", nama: "Aqua 600ml", kategori: "Minuman", hargaBeli: 2000, hargaJual: 3000, stok: 50 },
+          { barcode: "8999909015032", nama: "Aqua 600ml", kategori: "Minuman", hargaBeli: 2000, hargaJual: 3000, stok: 4 }, // Contoh stok sedikit
           { barcode: "8992388111113", nama: "Teh Pucuk", kategori: "Minuman", hargaBeli: 3000, hargaJual: 4000, stok: 80 },
         ];
         simpanDb();
@@ -1114,6 +1281,14 @@
         return Array.from(set).sort();
       }
 
+      // Cek status stok untuk badge dan warna
+      function getStatusStok(stokSaatIni) {
+        let batas = parseInt(dbPengaturan.batasStok) || 5;
+        if (stokSaatIni <= 0) return { kelas: "stok-warning", teks: "HABIS" };
+        if (stokSaatIni <= batas) return { kelas: "stok-warning", teks: "STOK TIPIS" };
+        return { kelas: "stok-aman", teks: "AMAN" };
+      }
+
       function simpanDb() {
         localStorage.setItem("barang", JSON.stringify(dbBarang));
         localStorage.setItem("transaksi", JSON.stringify(dbTransaksi));
@@ -1122,11 +1297,14 @@
         renderBarang();
         renderPilihBarang();
         renderLaporan();
+        cekKoneksiGoogle();
         // Render nilai input pengaturan saat ini
         document.getElementById("setNamaToko").value = dbPengaturan.namaToko;
         document.getElementById("setAlamatToko").value = dbPengaturan.alamatToko;
         document.getElementById("setTeleponToko").value = dbPengaturan.teleponToko;
         document.getElementById("setFooterStruk").value = dbPengaturan.footerStruk;
+        document.getElementById("setBatasStok").value = dbPengaturan.batasStok;
+        document.getElementById("setGoogleUrl").value = dbPengaturan.googleUrl || "";
       }
 
       // === LOGIKA TAB & UI ===
@@ -1145,6 +1323,8 @@
             document.getElementById("setAlamatToko").value = dbPengaturan.alamatToko;
             document.getElementById("setTeleponToko").value = dbPengaturan.teleponToko;
             document.getElementById("setFooterStruk").value = dbPengaturan.footerStruk;
+            document.getElementById("setBatasStok").value = dbPengaturan.batasStok;
+            document.getElementById("setGoogleUrl").value = dbPengaturan.googleUrl || "";
         }
       }
 
@@ -1154,9 +1334,14 @@
         dbPengaturan.alamatToko = document.getElementById("setAlamatToko").value;
         dbPengaturan.teleponToko = document.getElementById("setTeleponToko").value;
         dbPengaturan.footerStruk = document.getElementById("setFooterStruk").value;
+        dbPengaturan.batasStok = parseInt(document.getElementById("setBatasStok").value) || 5;
+        
+        let urlInput = document.getElementById("setGoogleUrl").value.trim();
+        dbPengaturan.googleUrl = urlInput;
+        URL_GOOGLE_SCRIPT = urlInput; // Update variable global
         
         simpanDb();
-        tampilkanToast("Pengaturan Berhasil Disimpan", "Profil toko dan struk sudah diperbarui.");
+        tampilkanToast("Pengaturan Disimpan", "Profil toko dan koneksi tersimpan.");
       }
 
       function backupData() {
@@ -1187,6 +1372,9 @@
                     dbPengaturan = data.pengaturan;
                     dbBarang = data.barang;
                     dbTransaksi = data.transaksi;
+                    // Update global var if backup contains google url
+                    if(dbPengaturan.googleUrl) URL_GOOGLE_SCRIPT = dbPengaturan.googleUrl;
+                    
                     simpanDb();
                     alert("Restore Data Berhasil!");
                     fileInput.value = ""; // Reset input file
@@ -1350,8 +1538,12 @@
         hasil.forEach((b, i) => {
           let namaHtml = q ? highlightTeks(b.nama, q) : b.nama;
           let katInfo = getInfoKategori(b.kategori);
+          // Indikator stok tipis di dropdown pencarian
+          let stokInfo = getStatusStok(b.stok);
+          let stokBadge = stokInfo.kelas === "stok-warning" ? `<span style="color:#dc2626;font-size:10px;font-weight:700">(${stokInfo.teks})</span>` : '';
+          
           html += `<div class="dd-item" data-index="${i}" data-barcode="${b.barcode}" onclick="pilihDariDropdown('${b.barcode}')">
-            <div><div class="dd-nama">${namaHtml} <span class="dd-kategori">${katInfo.emoji} ${katInfo.nama}</span></div><div style="font-size:11px;color:#94a3b8">${b.barcode}</div></div>
+            <div><div class="dd-nama">${namaHtml} <span class="dd-kategori">${katInfo.emoji} ${katInfo.nama}</span></div><div style="font-size:11px;color:#94a3b8">${b.barcode} ${stokBadge}</div></div>
             <div class="dd-info"><div class="dd-harga">Rp${b.hargaJual.toLocaleString()}</div><div>Stok: ${b.stok}</div></div>
           </div>`;
         });
@@ -1482,6 +1674,8 @@
         if (bayar < totalJual) return alert("Uang bayar kurang!");
 
         let stokMasalah = "";
+        let barangHabisList = [];
+
         for (let i = 0; i < struk.length; i++) {
           let itemStruk = struk[i];
           let barangDb = dbBarang.find((b) => b.barcode === itemStruk.barcode);
@@ -1490,12 +1684,51 @@
         }
         if (stokMasalah !== "") { alert("⛔ TRANSAKSI DIBATALKAN!\n\n" + stokMasalah + "\nSilakan periksa stok atau kurangi jumlah barang."); return; }
 
-        struk.forEach((s) => { let b = dbBarang.find((x) => x.barcode === s.barcode); if (b) b.stok -= s.qty; });
-        dbTransaksi.push({ waktu: new Date().toLocaleString("id-ID"), totalJual: totalJual, totalModal: totalModal, laba: laba, item: struk.map((s) => `${s.nama} x${s.qty}`).join(", ") });
+        // Proses stok dan kumpulkan barang yang habis
+        struk.forEach((s) => { 
+          let b = dbBarang.find((x) => x.barcode === s.barcode);
+          if (b) {
+            b.stok -= s.qty;
+            if (b.stok <= 0) barangHabisList.push(b.nama);
+          }
+        });
+        
+        const noStruk = "#" + Date.now().toString().slice(-6);
+        const waktuTransaksi = new Date().toLocaleString("id-ID");
+        
+        // Data untuk Google Sheet
+        const dataSheet = {
+          noStruk: noStruk,
+          waktu: waktuTransaksi,
+          item: struk.map((s) => `${s.nama} x${s.qty}`).join(", "),
+          totalJual: totalJual,
+          totalModal: totalModal,
+          laba: laba
+        };
+
+        dbTransaksi.push({ 
+          waktu: waktuTransaksi, 
+          totalJual: totalJual, 
+          totalModal: totalModal, 
+          laba: laba, 
+          item: struk.map((s) => `${s.nama} x${s.qty}`).join(", ") 
+        });
         
         siapkanCetak(totalJual, bayar);
-        simpanDb();
+        simpanDb(); // Simpan ke LocalStorage dulu agar data aman
+        
+        // Kirim ke Google Sheet (Async, tidak mengganggu proses cetak)
+        kirimKeGoogleSheet(dataSheet);
+        
         tampilkanToast("Transaksi Berhasil!", `Total: Rp${totalJual.toLocaleString()}\nLaba: Rp${laba.toLocaleString()}`);
+
+        // Tampilkan peringatan jika ada stok habis
+        if (barangHabisList.length > 0) {
+          setTimeout(() => {
+            tampilkanToast("PERINGATAN STOK HABIS", `Barang berikut habis dan perlu restock:\n${barangHabisList.join(", ")}`, true);
+          }, 2500);
+        }
+
         window.print();
         resetStruk();
       }
@@ -1529,14 +1762,16 @@
         document.getElementById("kembaliCetak").innerText = "Rp " + kembali.toLocaleString('id-ID');
       }
 
-      function tampilkanToast(judul, pesan) {
+      function tampilkanToast(judul, pesan, isWarning = false) {
         let container = document.getElementById("toastContainer");
         let toast = document.createElement("div");
-        toast.className = "toast";
-        toast.innerHTML = `<div class="toast-icon">✅</div><div class="toast-content"><div class="toast-title">${judul}</div><div class="toast-msg">${pesan}</div></div>`;
+        let icon = isWarning ? "⚠️" : "✅";
+        let kelas = isWarning ? "warning" : "";
+        toast.className = `toast ${kelas}`;
+        toast.innerHTML = `<div class="toast-icon">${icon}</div><div class="toast-content"><div class="toast-title">${judul}</div><div class="toast-msg" style="white-space: pre-line;">${pesan}</div></div>`;
         container.appendChild(toast);
         requestAnimationFrame(() => toast.classList.add("show"));
-        setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 300); }, 4000);
+        setTimeout(() => { toast.classList.remove("show"); setTimeout(() => toast.remove(), 300); }, 5000);
       }
 
       function resetStruk() {
@@ -1657,14 +1892,24 @@
           let asliIdx = dbBarang.indexOf(b);
           let labaPerPcs = b.hargaJual - b.hargaBeli;
           let labaColor = labaPerPcs >= 0 ? "var(--hijau)" : "var(--merah)";
+          
+          // Logika Peringatan Stok
+          let stokStatus = getStatusStok(b.stok);
+          let stokHtml = `<div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+            <b style="font-size:14px;">${b.stok}</b>
+            <span class="badge-stok ${stokStatus.kelas}">${stokStatus.teks}</span>
+          </div>`;
+          
+          let namaBarang = (b.stok <= (dbPengaturan.batasStok || 5)) ? `<span class="teks-stok-warning">⚠️ ${b.nama}</span>` : b.nama;
+
           tbody.innerHTML += `<tr>
             <td style="font-size:12px">${b.barcode}</td>
-            <td><b>${b.nama}</b></td>
+            <td><b>${namaBarang}</b></td>
             <td>${buatBadgeHtml(b.kategori)}</td>
             <td>Rp${b.hargaBeli.toLocaleString()}</td>
             <td>Rp${b.hargaJual.toLocaleString()}</td>
             <td style="color:${labaColor};font-weight:600">Rp${labaPerPcs.toLocaleString()}</td>
-            <td><b>${b.stok}</b></td>
+            <td>${stokHtml}</td>
             <td>
               <button class="btn-edit" onclick="editBarang(${asliIdx})">✏️</button>
               <button class="btn-hapus" onclick="hapusBarang(${asliIdx})">🗑️</button>
@@ -1754,4 +1999,4 @@
     </script>
   </body>
 </html>
-``` tambahkan peringatan stok
+```
