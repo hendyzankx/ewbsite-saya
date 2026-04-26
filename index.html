@@ -99,7 +99,8 @@
         color: #334155;
       }
       input,
-      select {
+      select,
+      textarea {
         width: 100%;
         padding: 12px;
         margin: 6px 0;
@@ -182,6 +183,29 @@
       }
       .btn-save {
         background: var(--hijau) !important;
+      }
+
+      /* Filter Tanggal */
+      .filter-date-container {
+        display: flex;
+        gap: 10px;
+        align-items: flex-end;
+        margin-bottom: 15px;
+      }
+      .filter-date-input {
+        flex: 1;
+      }
+      .filter-date-input label {
+        display: block;
+        font-size: 12px;
+        margin-bottom: 4px;
+        font-weight: 600;
+        color: #64748b;
+      }
+      .btn-filter {
+        width: auto;
+        margin-bottom: 6px;
+        white-space: nowrap;
       }
 
       #scanInput {
@@ -597,6 +621,98 @@
         border-color: var(--biru);
       }
 
+      /* ===== MODAL DETAIL TRANSAKSI ===== */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s;
+      }
+      .modal-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .modal-box {
+        background: white;
+        width: 100%;
+        max-width: 500px;
+        border-radius: 12px;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .modal-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #f8fafc;
+      }
+      .modal-title {
+        font-weight: 700;
+        font-size: 18px;
+        color: #1e293b;
+      }
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: #64748b;
+        cursor: pointer;
+        padding: 0;
+        width: auto;
+        margin: 0;
+      }
+      .modal-close:hover {
+        color: var(--merah);
+      }
+      .modal-body {
+        padding: 20px;
+        overflow-y: auto;
+      }
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+      .detail-label {
+        color: #64748b;
+        font-weight: 600;
+      }
+      .detail-value {
+        font-weight: 700;
+        text-align: right;
+      }
+      .table-modal {
+        width: 100%;
+        margin-top: 15px;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+      }
+      .table-modal th, .table-modal td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 13px;
+      }
+      .table-modal th {
+        background: #f1f5f9;
+      }
+      /* ===== AKHIR MODAL ===== */
+
       /* ===== TOAST NOTIFICATION ===== */
       .toast-container {
         position: fixed;
@@ -651,7 +767,8 @@
         .no-print,
         .tabs,
         .header,
-        .toast-container {
+        .toast-container,
+        .modal-overlay {
           display: none !important;
         }
         body {
@@ -895,10 +1012,29 @@
           </div>
         </div>
 
-        <!-- TAB LAPORAN -->
+        <!-- TAB LAPORAN (UPDATED) -->
         <div id="laporan" class="hide no-print">
           <div class="card">
-            <h3>Ringkasan Hari Ini</h3>
+            <h3>Ringkasan Filter Tanggal</h3>
+            <div class="filter-date-container">
+              <div class="filter-date-input">
+                <label>Tanggal Mulai</label>
+                <input type="date" id="filterTglMulai" />
+              </div>
+              <div class="filter-date-input">
+                <label>Tanggal Selesai</label>
+                <input type="date" id="filterTglSelesai" />
+              </div>
+              <div style="flex:0 0 auto;">
+                <label>&nbsp;</label>
+                <button onclick="renderLaporan(true)" class="btn-filter">🔍 Terapkan</button>
+              </div>
+              <div style="flex:0 0 auto;">
+                <label>&nbsp;</label>
+                <button onclick="resetFilterLaporan()" class="btn-hapus" style="background:#64748b !important; margin:0;">Reset</button>
+              </div>
+            </div>
+
             <div class="ringkasan-grid">
               <div class="total-box">
                 <div class="label">OMSET (PENJUALAN)</div>
@@ -932,7 +1068,8 @@
                     <th>Omset</th>
                     <th>Modal</th>
                     <th>Laba</th>
-                    <th>Detail Item</th>
+                    <th>Detail</th>
+                    <th>Aksi</th>
                   </tr>
                 </thead>
                 <tbody></tbody>
@@ -941,7 +1078,7 @@
           </div>
         </div>
 
-        <!-- TAB PENGATURAN (BARU) -->
+        <!-- TAB PENGATURAN -->
         <div id="pengaturan" class="hide no-print">
           <!-- Profil Toko -->
           <div class="card">
@@ -1049,6 +1186,45 @@
       </div>
     </div>
 
+    <!-- MODAL DETAIL TRANSAKSI -->
+    <div class="modal-overlay" id="modalDetail" onclick="tutupModal(event)">
+      <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <div class="modal-title">Detail Transaksi</div>
+          <button class="modal-close" onclick="tutupModal(null, true)">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="detail-row">
+            <span class="detail-label">Waktu</span>
+            <span class="detail-value" id="mdlWaktu">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Total Omset</span>
+            <span class="detail-value" id="mdlOmset">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Total Modal</span>
+            <span class="detail-value" id="mdlModal">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Keuntungan</span>
+            <span class="detail-value" id="mdlLaba">-</span>
+          </div>
+          
+          <table class="table-modal">
+            <thead>
+              <tr>
+                <th>Barang</th>
+                <th style="text-align:center">Qty</th>
+                <th style="text-align:right">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody id="mdlBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- CONTAINER TOAST NOTIFICATION -->
     <div class="toast-container" id="toastContainer"></div>
 
@@ -1118,7 +1294,7 @@
         renderOpsiKategori();
         renderBarang();
         renderPilihBarang();
-        renderLaporan();
+        renderLaporan(false); // Render awal tanpa filter tanggal
         // Render nilai input pengaturan saat ini
         document.getElementById("setNamaToko").value = dbPengaturan.namaToko;
         document.getElementById("setAlamatToko").value = dbPengaturan.alamatToko;
@@ -1137,7 +1313,6 @@
         document.getElementById(tabId[tab]).classList.add("aktif");
         if (tab === "kasir") setTimeout(() => document.getElementById("scanInput").focus(), 100);
         if (tab === "pengaturan") {
-            // Pastikan input terisi data terbaru
             document.getElementById("setNamaToko").value = dbPengaturan.namaToko;
             document.getElementById("setAlamatToko").value = dbPengaturan.alamatToko;
             document.getElementById("setTeleponToko").value = dbPengaturan.teleponToko;
@@ -1186,7 +1361,7 @@
                     dbTransaksi = data.transaksi;
                     simpanDb();
                     alert("Restore Data Berhasil!");
-                    fileInput.value = ""; // Reset input file
+                    fileInput.value = ""; 
                 }
             } else {
                 alert("Format file salah atau rusak.");
@@ -1488,7 +1663,16 @@
         if (stokMasalah !== "") { alert("⛔ TRANSAKSI DIBATALKAN!\n\n" + stokMasalah + "\nSilakan periksa stok atau kurangi jumlah barang."); return; }
 
         struk.forEach((s) => { let b = dbBarang.find((x) => x.barcode === s.barcode); if (b) b.stok -= s.qty; });
-        dbTransaksi.push({ waktu: new Date().toLocaleString("id-ID"), totalJual: totalJual, totalModal: totalModal, laba: laba, item: struk.map((s) => `${s.nama} x${s.qty}`).join(", ") });
+
+        // Simpan Item Detail (Array) untuk Laporan Baru, dan String untuk legacy/backup
+        dbTransaksi.push({
+          waktu: new Date().toLocaleString("id-ID"),
+          totalJual: totalJual,
+          totalModal: totalModal,
+          laba: laba,
+          item: struk.map((s) => `${s.nama} x${s.qty}`).join(", "), // Legacy String
+          itemDetail: JSON.parse(JSON.stringify(struk)) // NEW: Array of objects
+        });
         
         siapkanCetak(totalJual, bayar);
         simpanDb();
@@ -1498,20 +1682,17 @@
       }
 
       function siapkanCetak(total, bayar) {
-        // 1. Terapkan Pengaturan ke Struk
         document.getElementById("printStoreName").innerText = dbPengaturan.namaToko.toUpperCase();
         document.getElementById("printStoreAddress").innerHTML = dbPengaturan.alamatToko + "<br/>Telp: " + dbPengaturan.teleponToko;
         document.getElementById("printFooterMsg").innerText = dbPengaturan.footerStruk;
-        document.getElementById("printStoreContact").innerText = ""; // Opsional: bisa diisi website toko dari pengaturan
+        document.getElementById("printStoreContact").innerText = "";
 
-        // 2. Data Transaksi
         const noStruk = "#" + Date.now().toString().slice(-6);
         const tanggalCetak = new Date().toLocaleString("id-ID", { dateStyle: 'medium', timeStyle: 'short' });
         document.getElementById("printDate").innerText = tanggalCetak;
         document.getElementById("printNoStruk").innerText = noStruk;
         document.getElementById("printKasir").innerText = "Kasir: Admin";
 
-        // 3. Item
         let tbody = document.getElementById("tbodyCetak");
         tbody.innerHTML = "";
         struk.forEach((item) => {
@@ -1519,11 +1700,41 @@
           tbody.innerHTML += `<tr><td class="col-name"><div>${item.nama}</div></td><td class="col-qty">${item.qty}</td><td class="col-price">${sub.toLocaleString('id-ID')}</td></tr>`;
         });
 
-        // 4. Summary
         document.getElementById("totalCetak").innerText = "Rp " + total.toLocaleString('id-ID');
         document.getElementById("bayarCetak").innerText = "Rp " + bayar.toLocaleString('id-ID');
         let kembali = bayar - total;
         document.getElementById("kembaliCetak").innerText = "Rp " + kembali.toLocaleString('id-ID');
+      }
+
+      // === MODAL DETAIL ===
+      function bukaDetailTransaksi(index, asliIdx) {
+        let t = dbTransaksi[asliIdx];
+        document.getElementById("mdlWaktu").innerText = t.waktu;
+        document.getElementById("mdlOmset").innerText = "Rp " + (t.totalJual || 0).toLocaleString();
+        document.getElementById("mdlModal").innerText = "Rp " + (t.totalModal || 0).toLocaleString();
+        document.getElementById("mdlLaba").innerText = "Rp " + (t.laba || 0).toLocaleString();
+        
+        let tbody = document.getElementById("mdlBody");
+        tbody.innerHTML = "";
+
+        // Cek apakah ada data detail baru
+        if (t.itemDetail && Array.isArray(t.itemDetail)) {
+            t.itemDetail.forEach((item) => {
+                let sub = item.hargaJual * item.qty;
+                tbody.innerHTML += `<tr><td>${item.nama}</td><td style="text-align:center">${item.qty}</td><td style="text-align:right">${sub.toLocaleString()}</td></tr>`;
+            });
+        } else {
+            // Fallback data lama (string)
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#64748b;">${t.item}</td></tr>`;
+        }
+
+        document.getElementById("modalDetail").classList.add("open");
+      }
+
+      function tutupModal(e, force = false) {
+        if (force || e.target.id === "modalDetail") {
+            document.getElementById("modalDetail").classList.remove("open");
+        }
       }
 
       function tampilkanToast(judul, pesan) {
@@ -1709,24 +1920,82 @@
         }
       }
 
-      // === LAPORAN & EXPORT ===
-      function renderLaporan() {
+      // === LOGIKA LAPORAN DENGAN FILTER TANGGAL ===
+      function resetFilterLaporan() {
+          document.getElementById("filterTglMulai").value = "";
+          document.getElementById("filterTglSelesai").value = "";
+          renderLaporan(false);
+      }
+
+      function renderLaporan(useFilter = false) {
         let tbody = document.querySelector("#tabelLaporan tbody");
         tbody.innerHTML = "";
         let totalOmset = 0; let totalModal = 0; let totalLaba = 0;
-        let hariIni = new Date().toLocaleDateString("id-ID");
-        dbTransaksi.filter((t) => t.waktu.includes(hariIni)).forEach((t) => {
-          let modal = t.totalModal !== undefined ? t.totalModal : 0;
-          let laba = t.laba !== undefined ? t.laba : t.total;
-          let omset = t.totalJual !== undefined ? t.totalJual : t.total;
-          totalOmset += omset; totalModal += modal; totalLaba += laba;
-          let labaColor = laba >= 0 ? "var(--hijau)" : "var(--merah)";
-          tbody.innerHTML += `<tr><td>${t.waktu}</td><td>Rp${omset.toLocaleString()}</td><td>Rp${modal.toLocaleString()}</td><td style="color:${labaColor};font-weight:600">Rp${laba.toLocaleString()}</td><td>${t.item}</td></tr>`;
+
+        let startDateStr = document.getElementById("filterTglMulai").value;
+        let endDateStr = document.getElementById("filterTglSelesai").value;
+        
+        let startDate = startDateStr ? new Date(startDateStr) : null;
+        let endDate = endDateStr ? new Date(endDateStr);
+        
+        // Jika endDate dipilih, set ke akhir hari tersebut
+        if (endDate) {
+            endDate.setHours(23, 59, 59, 999);
+        }
+
+        let filteredData = dbTransaksi.filter((t) => {
+            if (!useFilter && !startDate && !endDate) {
+                // Default: Filter Hari Ini jika tidak ada filter aktif
+                let hariIni = new Date().toLocaleDateString("id-ID");
+                return t.waktu.includes(hariIni);
+            }
+
+            // Parsing waktu transaksi (Format ID: dd/mm/yyyy, hh.mm.ss)
+            // Kita split string untuk mendapatkan bagian tanggal saja
+            let parts = t.waktu.split(",")[0].split("/"); // ["dd", "mm", "yyyy"]
+            if (parts.length !== 3) return true; // Jika format error, tampilkan saja
+
+            let tglTrans = new Date(parts[2], parts[1] - 1, parts[0]); // yyyy, mm-1, dd
+
+            if (startDate && tglTrans < startDate) return false;
+            if (endDate && tglTrans > endDate) return false;
+            
+            return true;
         });
+
+        // Urutkan dari terbaru
+        filteredData.sort((a, b) => new Date(b.waktu) - new Date(a.waktu));
+
+        filteredData.forEach((t) => {
+            let modal = t.totalModal !== undefined ? t.totalModal : 0;
+            let laba = t.laba !== undefined ? t.laba : t.total;
+            let omset = t.totalJual !== undefined ? t.totalJual : t.total;
+
+            totalOmset += omset; totalModal += modal; totalLaba += laba;
+            let labaColor = laba >= 0 ? "var(--hijau)" : "var(--merah)";
+
+            // Cari index asli untuk fungsi bukaDetailTransaksi
+            let asliIdx = dbTransaksi.indexOf(t);
+
+            tbody.innerHTML += `<tr>
+                <td>${t.waktu}</td>
+                <td>Rp${omset.toLocaleString()}</td>
+                <td>Rp${modal.toLocaleString()}</td>
+                <td style="color:${labaColor};font-weight:600">Rp${laba.toLocaleString()}</td>
+                <td style="font-size:12px; color:#64748b; max-width:200px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                    ${t.itemDetail ? t.itemDetail.length + " Barang" : t.item}
+                </td>
+                <td style="text-align:right">
+                    <button class="btn-edit" onclick="bukaDetailTransaksi(${asliIdx}, ${asliIdx})">👁️ Detail</button>
+                </td>
+            </tr>`;
+        });
+
         document.getElementById("totalHariIni").innerText = totalOmset.toLocaleString();
         document.getElementById("modalHariIni").innerText = totalModal.toLocaleString();
         document.getElementById("labaHariIni").innerText = totalLaba.toLocaleString();
       }
+
       function exportCSV() {
         let csv = "Waktu,Omset,Modal,Laba,Item\n";
         dbTransaksi.forEach((t) => {
