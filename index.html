@@ -78,7 +78,8 @@
       .total-box.emas { background: var(--emas); }
       
       /* Scanner Area */
-      #reader, #readerBarang { width: 100%; border-radius: 8px; overflow: hidden; background: #000; margin-bottom: 10px; }
+      #reader, #readerBarang { width: 100%; border-radius: 8px; overflow: hidden; background: #000; margin-bottom: 10px; min-height: 150px; position: relative; }
+      #reader video, #readerBarang video { object-fit: cover; width: 100%; height: 100%; }
       
       /* Modal */
       .modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; z-index: 999; opacity: 0; pointer-events: none; transition: 0.3s; }
@@ -107,7 +108,7 @@
     <div class="app-container">
       <div class="header">
         <h1 id="headerNamaToko">KASIR PRO</h1>
-        <small id="headerInfoToko">Secure Hybrid Mode v2.0</small>
+        <small id="headerInfoToko">Secure Hybrid Mode v2.2</small>
       </div>
 
       <!-- Secure Status Bar -->
@@ -129,17 +130,20 @@
           <div class="card">
             <h3>Input Transaksi</h3>
             <div style="display:flex; gap:5px;">
-              <input type="text" id="scanInput" placeholder="Scan barcode..." autocomplete="off" style="flex:2" onkeypress="handleEnter(event)" />
-              <button class="btn-kamera" onclick="toggleCamera('reader')" style="flex:0">📷</button>
+              <input type="text" id="scanInput" placeholder="Scan barcode / Ketik Nama..." autocomplete="off" style="flex:2" onkeypress="handleEnter(event)" />
+              <button id="btnToggleKameraKasir" class="btn-kamera" onclick="toggleCamera('reader')" style="flex:0">📷</button>
             </div>
             <div id="reader" class="hide"></div>
             
-            <select id="pilihBarang" onchange="tambahManual()">
-              <option value="">-- Pilih Barang --</option>
-            </select>
-            <div style="display:flex; gap:5px; margin-top:5px;">
-               <input type="number" id="qtyManual" value="1" placeholder="Qty" style="flex:1" min="1" />
-               <button class="btn-small" onclick="tambahManual()">+ Add</button>
+            <div id="manualKasirContainer">
+                <label style="font-size:11px; font-weight:bold; color:#64748b;">Pilih Manual:</label>
+                <select id="pilihBarang" onchange="tambahManual()">
+                  <option value="">-- Pilih Barang --</option>
+                </select>
+                <div style="display:flex; gap:5px; margin-top:5px;">
+                   <input type="number" id="qtyManual" value="1" placeholder="Qty" style="flex:1" min="1" />
+                   <button class="btn-small" onclick="tambahManual()">+ Add</button>
+                </div>
             </div>
           </div>
 
@@ -286,7 +290,6 @@ const LS_KEY_OFFLINE_TX = 'SECURE_OFFLINE_TX';
 const LS_KEY_OFFLINE_BARANG = 'SECURE_OFFLINE_BARANG';
 const LS_KEY_SETTINGS = 'SECURE_SETTINGS';
 
-// Mock Data for Standalone Demo
 let dbBarang = [
   { barcode: '899123456', nama: 'Air Mineral 600ml', kategori: 'Minuman', hargaBeli: 2000, hargaJual: 3500, stok: 50 },
   { barcode: '899654321', nama: 'Roti Coklat', kategori: 'Snack', hargaBeli: 3000, hargaJual: 5000, stok: 24 },
@@ -326,7 +329,7 @@ function showToast(msg) {
 }
 
 // ==========================================
-// 3. GOOGLE SCRIPT MOCK (Run Mode) - PERBAIKAN DISINI
+// 3. GOOGLE SCRIPT MOCK (PERBAIKAN LOGIKA DATA)
 // ==========================================
 if (typeof google === 'undefined') {
   console.log("Mocking google.script.run for standalone mode");
@@ -341,19 +344,23 @@ if (typeof google === 'undefined') {
                   const savedBarang = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG) || '[]');
                   const savedTx = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_TX) || '[]');
                   const savedSettings = JSON.parse(localStorage.getItem(LS_KEY_SETTINGS) || '{}');
-                  
                   if(savedSettings.nama) tokoData = savedSettings;
 
+                  // PERBAIKAN PENTING: Deduplikasi Barang berdasarkan Barcode
+                  // Jika ada barang di dbBarang (default) dan di savedBarang (user input) dengan barcode sama,
+                  // gunakan yang di savedBarang (Update), bukan menduplikat.
+                  let allBarang = [...dbBarang, ...savedBarang];
+                  let uniqueBarangMap = new Map();
+                  allBarang.forEach(item => uniqueBarangMap.set(item.barcode, item));
+                  let finalBarang = Array.from(uniqueBarangMap.values());
+
                   cb({
-                    barang: [...dbBarang, ...savedBarang],
+                    barang: finalBarang,
                     transaksi: savedTx,
                     toko: tokoData
                   });
                 },
-                saveTransaction: (tx) => {
-                  setTimeout(() => cb({ success: true }), 500);
-                },
-                // PERBAIKAN: Mock SaveProduct benar-benar menyimpan ke localStorage
+                saveTransaction: (tx) => { setTimeout(() => cb({ success: true }), 500); },
                 saveProduct: (prod) => {
                   let cache = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG) || '[]');
                   let idx = cache.findIndex(x => x.barcode === prod.barcode);
@@ -362,10 +369,7 @@ if (typeof google === 'undefined') {
                   localStorage.setItem(LS_KEY_OFFLINE_BARANG, JSON.stringify(cache));
                   setTimeout(() => cb({ success: true }), 500);
                 },
-                syncOfflineData: (data) => {
-                   setTimeout(() => cb({ success: true }), 1000);
-                },
-                // PERBAIKAN: Mock saveSettings ditambahkan agar tidak error
+                syncOfflineData: (data) => { setTimeout(() => cb({ success: true }), 1000); },
                 saveSettings: (settings) => {
                    localStorage.setItem(LS_KEY_SETTINGS, JSON.stringify(settings));
                    setTimeout(() => cb({ success: true }), 500);
@@ -386,7 +390,6 @@ window.onload = function() {
   updateOnlineStatus();
   window.addEventListener('online', updateOnlineStatus);
   window.addEventListener('offline', updateOnlineStatus);
-  
   loadCloudData();
   setInterval(attemptSync, 30000);
 };
@@ -399,7 +402,10 @@ function gantiTab(tabId) {
   
   document.getElementById(tabId).classList.remove('hide');
   document.getElementById('tab' + tabId.charAt(0).toUpperCase() + tabId.slice(1)).classList.add('aktif');
-  stopCamera();
+
+  if(tabId !== 'kasir' && tabId !== 'barang') {
+    stopCamera();
+  }
 
   if(tabId === 'laporan') renderLaporan();
   if(tabId === 'barang') renderBarang();
@@ -411,7 +417,6 @@ function gantiTab(tabId) {
 function updateOnlineStatus() {
   const statusBar = document.getElementById('connectionStatus');
   const statusText = document.getElementById('statusText');
-  
   if (navigator.onLine) {
     statusBar.className = 'status-bar status-online';
     statusText.innerText = "🟢 Online: Terhubung";
@@ -593,36 +598,28 @@ function resetStruk() {
 }
 
 function hitungKembali() {
-  let total = struk.reduce((a,b)=>a+b.hargaJual*b.qty,0);
+  let total = struk.reduce((a,b)=>a+(b.hargaJual||0)*(b.qty||0),0); // Safety check for NaN
   let bayar = Number(document.getElementById('bayar').value);
   let kembali = bayar - total;
-  
   let elKembali = document.getElementById('kembalian');
   elKembali.innerText = formatRupiah(kembali < 0 ? 0 : kembali);
-  
   if(kembali < 0) elKembali.style.color = '#ef4444'; 
   else elKembali.style.color = 'white';
 }
 
 function selesaiTransaksi() {
   if(struk.length === 0) return showToast("Keranjang kosong!");
-
-  let total = struk.reduce((a,b)=>a+b.hargaJual*b.qty,0);
+  let total = struk.reduce((a,b)=>a+(b.hargaJual||0)*(b.qty||0),0);
   let bayar = Number(document.getElementById('bayar').value);
-  
-  if(bayar < total) {
-    return showToast("Uang pembayaran kurang!");
-  }
+  if(bayar < total) return showToast("Uang pembayaran kurang!");
 
   let transaksi = {
     id: Date.now() + "-" + Math.random().toString(16).slice(2),
     waktuISO: new Date().toISOString(),
     waktu: new Date().toLocaleString('id-ID'),
-    totalJual: total,
-    uangBayar: bayar,
-    kembalian: bayar - total,
-    totalModal: struk.reduce((a,b)=>a+b.hargaBeli*b.qty,0),
-    laba: total - struk.reduce((a,b)=>a+b.hargaBeli*b.qty,0),
+    totalJual: total, uangBayar: bayar, kembalian: bayar - total,
+    totalModal: struk.reduce((a,b)=>a+(b.hargaBeli||0)*(b.qty||0),0),
+    laba: total - struk.reduce((a,b)=>a+(b.hargaBeli||0)*(b.qty||0),0),
     itemList: JSON.parse(JSON.stringify(struk))
   };
 
@@ -638,30 +635,19 @@ function selesaiTransaksi() {
     });
     renderBarang();
     populateSelectBarang();
-
     preparePrint(transaksi);
     document.getElementById('modalStruk').classList.add('show');
-
     struk = [];
     document.getElementById('bayar').value = '';
     renderStruk();
-    
     btn.disabled = false;
     btn.innerHTML = originalText;
     playSound('success');
   };
 
   if(navigator.onLine) {
-    google.script.run
-      .withSuccessHandler(() => {
-        processSuccess();
-        updatePendingBadge();
-      })
-      .withFailureHandler(() => {
-        saveOffline(transaksi);
-        processSuccess();
-      })
-      .saveTransaction(transaksi);
+    google.script.run.withSuccessHandler(() => { processSuccess(); updatePendingBadge(); })
+    .withFailureHandler(() => { saveOffline(transaksi); processSuccess(); }).saveTransaction(transaksi);
   } else {
     saveOffline(transaksi);
     processSuccess();
@@ -672,48 +658,60 @@ function saveOffline(t) {
   let offline = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_TX)||'[]');
   offline.push(t);
   localStorage.setItem(LS_KEY_OFFLINE_TX, JSON.stringify(offline));
-  
   dbTransaksi.unshift(t); 
   updatePendingBadge();
   showToast("💾 Disimpan Offline (Pending Sync)");
 }
 
 // ==========================================
-// 8. BARANG MANAGEMENT
+// 8. BARANG MANAGEMENT (FIX: SIMPAN BARANG)
 // ==========================================
 function simpanBarang() {
-  let barcode = sanitize(document.getElementById('barcode').value);
-  let nama = sanitize(document.getElementById('nama').value);
+  // Ambil value dan sanitasi
+  let barcode = sanitize(document.getElementById('barcode').value).trim(); // PERBAIKAN: Trim spasi
+  let nama = sanitize(document.getElementById('nama').value).trim();
   let kategori = document.getElementById('kategoriInput').value;
   let beli = Number(document.getElementById('hargaBeli').value);
   let jual = Number(document.getElementById('hargaJual').value);
   let stok = Number(document.getElementById('stokInput').value);
 
-  if(!barcode || !nama || beli < 0 || jual < 0) return showToast("⚠️ Data tidak lengkap!");
+  // PERBAIKAN: Validasi Ketat untuk mencegah Error
+  if (!barcode) return showToast("⚠️ Barcode wajib diisi!");
+  if (!nama) return showToast("⚠️ Nama barang wajib diisi!");
+  
+  // Cek apakah angka valid (bukan NaN) dan tidak negatif
+  if (isNaN(beli) || beli < 0) return showToast("⚠️ Harga Modal harus angka valid (>= 0)!");
+  if (isNaN(jual) || jual < 0) return showToast("⚠️ Harga Jual harus angka valid (>= 0)!");
+  if (isNaN(stok) || stok < 0) return showToast("⚠️ Stok harus angka valid!");
 
   let data = { barcode, nama, kategori, hargaBeli: beli, hargaJual: jual, stok };
 
+  // Simpan Lokal (Untuk Mode Hybrid)
+  let cache = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG)||'[]');
+  let idx = cache.findIndex(x => x.barcode === barcode);
+  if(idx >= 0) cache[idx] = data; // Update
+  else cache.push(data); // Insert
+  
+  localStorage.setItem(LS_KEY_OFFLINE_BARANG, JSON.stringify(cache));
+  
+  // Update Memory (Langsung tampil tanpa reload)
+  let memIdx = dbBarang.findIndex(x => x.barcode === barcode);
+  if(memIdx >= 0) dbBarang[memIdx] = data;
+  else dbBarang.push(data);
+  
+  renderBarang();
+  populateSelectBarang(); // Update dropdown kasir
+  batalEdit(); // Reset form
+
+  // Kirim ke server/Mock jika Online
   if(!navigator.onLine) {
-    let cache = JSON.parse(localStorage.getItem(LS_KEY_OFFLINE_BARANG)||'[]');
-    let existingIdx = cache.findIndex(x => x.barcode === barcode);
-    if(existingIdx >= 0) cache[existingIdx] = data;
-    else cache.push(data);
-    
-    localStorage.setItem(LS_KEY_OFFLINE_BARANG, JSON.stringify(cache));
-    
-    let memIdx = dbBarang.findIndex(x => x.barcode === barcode);
-    if(memIdx >= 0) dbBarang[memIdx] = data;
-    else dbBarang.push(data);
-    
-    renderBarang();
-    populateSelectBarang();
-    return showToast("💾 Tersimpan Offline");
+     return showToast("💾 Tersimpan Offline");
   }
 
   google.script.run.withSuccessHandler(() => {
-    loadCloudData();
-    showToast("✅ Barang Tersimpan!");
-    batalEdit();
+    showToast("✅ Barang Tersimpan & Tersinkron!");
+  }).withFailureHandler(() => {
+    showToast("✅ Tersimpan Local (Server Error)");
   }).saveProduct(data);
 }
 
@@ -755,12 +753,14 @@ function editBarang(code) {
 function batalEdit() {
   document.getElementById('barcode').value = '';
   document.getElementById('nama').value = '';
-  document.getElementById('stokInput').value = 0;
+  document.getElementById('hargaBeli').value = '';
+  document.getElementById('hargaJual').value = '';
+  document.getElementById('stokInput').value = '';
   document.getElementById('btnBatal').classList.add('hide');
 }
 
 function cekJenisBarang() {
-  let code = document.getElementById('barcode').value;
+  let code = document.getElementById('barcode').value.trim();
   let b = dbBarang.find(x => x.barcode === code);
   if(b) editBarang(code);
 }
@@ -775,11 +775,9 @@ function renderLaporan() {
   tbody.innerHTML = '';
 
   let recentTx = dbTransaksi.slice(0, 50);
-
   recentTx.forEach(t => {
     total += t.totalJual;
     laba += t.laba;
-    
     let tr = document.createElement('tr');
     tr.innerHTML = `
       <td>${t.waktu.split(',')[1] || t.waktu}</td>
@@ -792,13 +790,11 @@ function renderLaporan() {
 
   document.getElementById('totalOmset').innerText = formatRupiah(total);
   document.getElementById('totalLaba').innerText = formatRupiah(laba);
-
   updateChart(dbTransaksi);
 }
 
 function updateChart(data) {
   const ctx = document.getElementById('chartLaporan').getContext('2d');
-  
   let labels = data.slice(0, 10).map(t => t.waktu.split(',')[1] || t.waktu);
   let values = data.slice(0, 10).map(t => t.totalJual);
 
@@ -816,8 +812,7 @@ function updateChart(data) {
       }]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
+      responsive: true, maintainAspectRatio: false,
       plugins: { legend: { display: false } },
       scales: { y: { beginAtZero: true, grid: { display: false } }, x: { grid: { display: false } } }
     }
@@ -841,19 +836,14 @@ function preparePrint(tx) {
     <h2 style="margin-bottom:5px">${tokoData.nama}</h2>
     <div style="font-size:11px; margin-bottom:10px; white-space: pre-line;">${tokoData.info}</div>
     <div style="border-bottom:1px dashed #000; margin-bottom:5px;"></div>
-    <div style="text-align:left; font-size:12px; margin-bottom:5px;">
-      Tgl: ${tx.waktu}<br>
-      ID: ${tx.id}
-    </div>
+    <div style="text-align:left; font-size:12px; margin-bottom:5px;">Tgl: ${tx.waktu}<br>ID: ${tx.id}</div>
     <div style="border-bottom:1px dashed #000; margin-bottom:5px;"></div>
     <table style="width:100%; font-size:12px; margin-bottom:10px;">
   `;
   
   tx.itemList.forEach(item => {
     html += `
-      <tr>
-        <td colspan="2" style="text-align:left; padding:2px 0;">${item.nama}</td>
-      </tr>
+      <tr><td colspan="2" style="text-align:left; padding:2px 0;">${item.nama}</td></tr>
       <tr>
         <td style="text-align:left; padding:0;">${item.qty} x ${item.hargaJual}</td>
         <td style="text-align:right; padding:0;">${item.qty * item.hargaJual}</td>
@@ -861,25 +851,14 @@ function preparePrint(tx) {
     `;
   });
 
-  html += `
-    </table>
+  html += `</table>
     <div style="border-bottom:1px dashed #000; margin-bottom:5px;"></div>
-    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px;">
-      <span>TOTAL</span>
-      <span>${formatRupiah(tx.totalJual)}</span>
-    </div>
-    <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:2px;">
-      <span>Tunai</span>
-      <span>${formatRupiah(tx.uangBayar)}</span>
-    </div>
-    <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:2px;">
-      <span>Kembali</span>
-      <span>${formatRupiah(tx.kembalian)}</span>
-    </div>
+    <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:13px;"><span>TOTAL</span><span>${formatRupiah(tx.totalJual)}</span></div>
+    <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:2px;"><span>Tunai</span><span>${formatRupiah(tx.uangBayar)}</span></div>
+    <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:2px;"><span>Kembali</span><span>${formatRupiah(tx.kembalian)}</span></div>
     <div style="border-bottom:1px dashed #000; margin-top:10px; margin-bottom:5px;"></div>
     <div style="font-size:10px; text-align:center;">*** TERIMA KASIH ***</div>
   `;
-
   document.getElementById('printArea').innerHTML = html;
 }
 
@@ -891,11 +870,11 @@ function tutupModal() {
 // 11. CAMERA SCANNER
 // ==========================================
 let html5QrcodeScanner = null;
+let isCameraRunning = false;
 
 function toggleCamera(elementId) {
   const readerEl = document.getElementById(elementId);
-  
-  if (readerEl.classList.contains('hide')) {
+  if (!isCameraRunning) {
     readerEl.classList.remove('hide');
     startCamera(elementId);
   } else {
@@ -906,7 +885,12 @@ function toggleCamera(elementId) {
 
 function startCamera(elementId) {
   stopCamera();
-  
+  if (location.protocol !== 'https:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+    alert("⚠️ Kamera butuh HTTPS/Localhost.");
+    stopCamera();
+    return;
+  }
+
   html5QrcodeScanner = new Html5Qrcode(elementId);
   const config = { fps: 10, qrbox: { width: 250, height: 150 } };
   
@@ -918,34 +902,51 @@ function startCamera(elementId) {
       } else {
         document.getElementById('barcode').value = decodedText;
         cekJenisBarang();
+        stopCamera();
       }
-      stopCamera();
     },
     (errorMessage) => {}
-  ).catch(err => {
-    console.error(err);
-    showToast("Kamera gagal aktif");
+  ).then(() => {
+    isCameraRunning = true;
+    updateCameraButton(true);
+  }).catch(err => {
+    console.error("Camera Error:", err);
+    showToast("Gagal buka kamera: " + err);
     stopCamera();
   });
 }
 
 function stopCamera() {
-  if (html5QrcodeScanner) {
+  if (html5QrcodeScanner && isCameraRunning) {
     html5QrcodeScanner.stop().then(() => {
       html5QrcodeScanner.clear();
       html5QrcodeScanner = null;
-      document.getElementById('reader').classList.add('hide');
-      document.getElementById('readerBarang').classList.add('hide');
-    }).catch(err => {});
+      isCameraRunning = false;
+      updateCameraButton(false);
+    }).catch(err => {
+        console.error(err);
+        isCameraRunning = false;
+        updateCameraButton(false);
+    });
   }
 }
 
+function updateCameraButton(active) {
+    const btn = document.getElementById('btnToggleKameraKasir');
+    if(active) {
+        btn.style.background = "#dc2626"; 
+        btn.innerHTML = "⏹️ Stop";
+    } else {
+        btn.style.background = "#ea580c"; 
+        btn.innerHTML = "📷";
+    }
+}
+
 // ==========================================
-// 12. SETTINGS - PERBAIKAN DISINI
+// 12. SETTINGS
 // ==========================================
 function simpanPengaturan() {
   tokoData.nama = sanitize(document.getElementById('inputNamaToko').value);
-  // PERBAIKAN: Typo ID diperbaiki dari 'inputInfoToko0' menjadi 'inputInfoToko'
   tokoData.info = sanitize(document.getElementById('inputInfoToko').value);
   
   localStorage.setItem(LS_KEY_SETTINGS, JSON.stringify(tokoData));
